@@ -1,0 +1,115 @@
+<!-- /home/pincho/Desktop/chamasmart/app/templates/notifications/flash_messages.html -->
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<div class="fixed top-4 right-4 z-50 w-full max-w-xs sm:max-w-sm space-y-4">
+    {% with messages = get_flashed_messages(with_categories=true) %} {% for category, message in messages %} {% set category = category | replace('message', 'info') %}
+    <div class="flash-message transform transition-all duration-300 ease-out" x-data="{ show: true, progress: 100 }" x-init="setTimeout(() => { show = false }, 4000); 
+                         setInterval(() => progress -= 0.25, 10)" x-show="show" x-transition:enter="translate-x-full" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="opacity-0 translate-x-full" @click="show = false">
+
+        <!-- Message Container -->
+        <div class="relative rounded-xl p-4 shadow-lg backdrop-blur-sm
+                            {% if category == 'success' %}
+                                bg-emerald-50/90 dark:bg-emerald-900/80
+                            {% elif category == 'error' %}
+                                bg-rose-50/90 dark:bg-rose-900/80
+                            {% elif category == 'warning' %}
+                                bg-amber-50/90 dark:bg-amber-900/80
+                            {% else %}
+                                bg-blue-50/90 dark:bg-blue-900/80
+                            {% endif %}">
+
+            <!-- Progress Bar -->
+            <div class="absolute top-0 left-0 h-1 w-full rounded-t-xl bg-black/5">
+                <div class="h-full rounded-t-xl transition-all duration-10 ease-linear
+                                    {% if category == 'success' %}
+                                        bg-emerald-500
+                                    {% elif category == 'error' %}
+                                        bg-rose-500
+                                    {% elif category == 'warning' %}
+                                        bg-amber-500
+                                    {% else %}
+                                        bg-blue-500
+                                    {% endif %}" :style="`width: ${progress}%`">
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="flex items-start gap-3">
+                <!-- Icon -->
+                <div class="shrink-0">
+                    {% if category == 'success' %}
+                    <svg class="h-6 w-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg> {% elif category == 'error' %}
+                    <svg class="h-6 w-6 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg> {% elif category == 'warning' %}
+                    <svg class="h-6 w-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg> {% else %}
+                    <svg class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg> {% endif %}
+                </div>
+
+                <!-- Text -->
+                <div class="flex-1 space-y-1">
+                    <h3 class="text-sm font-medium
+                                    {% if category == 'success' %}
+                                        text-emerald-800 dark:text-emerald-100
+                                    {% elif category == 'error' %}
+                                        text-rose-800 dark:text-rose-100
+                                    {% elif category == 'warning' %}
+                                        text-amber-800 dark:text-amber-100
+                                    {% else %}
+                                        text-blue-800 dark:text-blue-100
+                                    {% endif %}">
+                        {{ message }}
+                    </h3>
+                </div>
+
+                <!-- Close Button -->
+                <button class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %} {% endwith %}
+</div>
+
+<style>
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+        }
+        to {
+            transform: translateX(0);
+        }
+    }
+    
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+        }
+        to {
+            opacity: 0;
+        }
+    }
+    
+    .flash-message {
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    .flash-message-leave {
+        animation: fadeOut 0.3s ease-in forwards;
+    }
+    
+    @media (max-width: 640px) {
+        .flash-message {
+            width: calc(100% - 2rem);
+            max-width: none;
+        }
+    }
+</style>

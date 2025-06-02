@@ -1,0 +1,517 @@
+{% extends 'dashboard_chama_admin/layout.html' %} {% block title %}Members{% endblock %} {% block content %}
+
+<!-- members.html Alpine.js data section update -->
+<div class="px-4 py-6 sm:px-6 lg:px-8 space-y-6" x-data="membersComponent">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <!-- Total Members Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Members</p>
+                    <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100" x-text="stats.totalMembers"></p>
+                </div>
+                <div class="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-lg">
+                    <i class="fas fa-users text-blue-600 dark:text-blue-400 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Members Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Active Members</p>
+                    <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100" x-text="stats.activeMembers"></p>
+                </div>
+                <div class="bg-green-100 dark:bg-green-900/30 p-3 rounded-lg">
+                    <i class="fas fa-user-check text-green-600 dark:text-green-400 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Invites Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Pending Invites</p>
+                    <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100" x-text="stats.pendingInvites"></p>
+                </div>
+                <div class="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-lg">
+                    <i class="fas fa-envelope-open-text text-purple-600 dark:text-purple-400 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chama Selection and Actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="w-full sm:w-64">
+            <select x-model="selectedChama" @change="loadChamaData($event.target.value)" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg 
+                           bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 
+                           focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="" selected>Select Chama</option>
+                {% for chama in chamas %}
+                <option value="{{ chama.id }}">{{ chama.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex gap-3 w-full sm:w-auto">
+            <!-- Export Dropdown -->
+            <div class="relative" x-data="{ open: false }">
+                <button @click="exportMenuOpen = !exportMenuOpen" class="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 
+                             text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 
+                             transition-colors flex items-center gap-2">
+                    <i class="fas fa-file-export"></i>
+                    <span>Export</span>
+                    <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                </button>
+
+                <!-- Export Menu -->
+                <div x-show="exportMenuOpen" @click.away="exportMenuOpen = false" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75"
+                    x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-10">
+                    <div class="py-1">
+                        <button @click="exportData('excel')" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+                            <i class="fas fa-file-excel text-green-600 dark:text-green-400"></i>
+                            <span x-text="isExporting && exportFormat === 'excel' ? 'Exporting...' : 'Export as Excel'"></span>
+                        </button>
+                        <button @click="exportData('pdf')" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+                            <i class="fas fa-file-pdf text-red-600 dark:text-red-400"></i>
+                            <span x-text="isExporting && exportFormat === 'pdf' ? 'Exporting...' : 'Export as PDF'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button @click="showAddMemberModal = true" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg 
+                         transition-colors flex items-center gap-2">
+                <i class="fas fa-plus"></i>
+                <span>Add Member</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Members Table -->
+    <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Name
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Role
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Status
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Joined
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Actions
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <template x-for="member in members" :key="member.id">
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                            <div class="flex items-center gap-3">
+                                <img :src="member.avatar" class="h-8 w-8 rounded-full" alt="Avatar">
+                                <span x-text="member.name"></span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            <span x-text="member.role" 
+                                  class="px-2 py-1 text-xs font-medium rounded-full"
+                                  :class="{
+                                      'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300': member.role === 'Admin',
+                                      'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300': member.role === 'Treasurer',
+                                      'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300': member.role === 'Member'
+                                  }"></span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span x-text="member.status" 
+                                  class="px-2 py-1 text-xs font-medium rounded-full"
+                                  :class="{
+                                      'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300': member.status === 'Active',
+                                      'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300': member.status === 'Pending',
+                                      'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300': member.status === 'Inactive'
+                                  }"></span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" x-text="member.joined"></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <div class="flex items-center gap-3">
+                                <button class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Empty State -->
+    <div x-show="members.length === 0" class="text-center py-12">
+        <div class="mx-auto max-w-md">
+            <i class="fas fa-users-slash text-4xl text-gray-400 dark:text-gray-600 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">No members found</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Select a chama to view its members</p>
+        </div>
+    </div>
+
+    <!-- Add Member Modal -->
+    <div x-show="showAddMemberModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 transform scale-100" x-transition:leave-end="opacity-0 transform scale-95" class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center" aria-labelledby="modal-title" x-cloak>
+
+        <!-- Semi-transparent backdrop (less intrusive) -->
+        <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" aria-hidden="true" @click="showAddMemberModal = false"></div>
+
+        <!-- Modal panel -->
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-2xl transform transition-all w-full max-w-md mx-4 sm:mx-auto">
+            <!-- Modal header with improved styling -->
+            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold text-white" id="modal-title">
+                        Add New Member
+                    </h3>
+                    <button @click="showAddMemberModal = false" class="text-white hover:text-gray-200 focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+                </div>
+            </div>
+
+            <!-- Modal body with improved padding and spacing -->
+            <div class="px-6 py-5">
+                <form @submit.prevent="addMember" class="space-y-5">
+                    <!-- Name Field -->
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Name *
+                    </label>
+                        <input type="text" id="name" x-model="newMember.name" required class="block w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 
+                                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                                  focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                    </div>
+
+                    <!-- Email Field -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Email *
+                    </label>
+                        <input type="email" id="email" x-model="newMember.email" required class="block w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 
+                                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                                  focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                    </div>
+
+                    <!-- Phone Field -->
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Phone
+                    </label>
+                        <input type="tel" id="phone" x-model="newMember.phone" class="block w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 
+                                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                                  focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                    </div>
+
+                    <!-- Two-column layout for smaller fields on larger screens -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Role Field -->
+                        <div>
+                            <label for="role" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Role
+                        </label>
+                            <select id="role" x-model="newMember.role" class="block w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 
+                                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                                       focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                            <option value="Admin">Admin</option>
+                            <option value="Treasurer">Treasurer</option>
+                            <option value="Member">Member</option>
+                        </select>
+                        </div>
+
+                        <!-- Status Field -->
+                        <div>
+                            <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Status
+                        </label>
+                            <select id="status" x-model="newMember.status" class="block w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 
+                                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                                       focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                            <option value="Active">Active</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Modal footer with improved button styling -->
+            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 flex flex-col sm:flex-row-reverse space-y-3 sm:space-y-0 sm:space-x-3 sm:space-x-reverse">
+                <button type="button" @click="addMember" class="w-full sm:w-auto px-5 py-2.5 rounded-lg 
+                           bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700
+                           text-white font-medium shadow-sm
+                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+                           transition-all duration-200 transform hover:-translate-y-0.5">
+                Add Member
+            </button>
+                <button type="button" @click="showAddMemberModal = false" class="w-full sm:w-auto px-5 py-2.5 rounded-lg
+                           bg-white dark:bg-gray-600 hover:bg-gray-50 dark:hover:bg-gray-500
+                           text-gray-700 dark:text-gray-200 font-medium
+                           border border-gray-300 dark:border-gray-500
+                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 dark:focus:ring-gray-400
+                           transition-all duration-200">
+                Cancel
+            </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div x-data="{ showToast: false, message: '', type: 'success' }" @show-toast.window="showToast = true; message = $event.detail.message; type = $event.detail.type; 
+                            setTimeout(() => { showToast = false }, 3000)" x-show="showToast" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0"
+        x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-2" class="fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50" :class="{
+             'bg-green-500 text-white': type === 'success',
+             'bg-red-500 text-white': type === 'error',
+             'bg-blue-500 text-white': type === 'info'
+         }">
+        <div class="flex items-center">
+            <i class="mr-2" :class="{
+                   'fas fa-check-circle': type === 'success',
+                   'fas fa-exclamation-circle': type === 'error',
+                   'fas fa-info-circle': type === 'info'
+               }"></i>
+            <span x-text="message"></span>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Custom scrollbar for table */
+    
+    .overflow-x-auto::-webkit-scrollbar {
+        height: 8px;
+        background-color: transparent;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 4px;
+    }
+    
+    .dark .overflow-x-auto::-webkit-scrollbar-thumb {
+        background-color: #4b5563;
+    }
+    /* Modal dialog transition */
+    
+    [x-cloak] {
+        display: none !important;
+    }
+</style>
+<script>
+    // members.js
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('membersComponent', () => ({
+            selectedChama: null,
+            members: [],
+            stats: {
+                totalMembers: 0,
+                activeMembers: 0,
+                pendingInvites: 0
+            },
+            showAddMemberModal: false,
+            newMember: {
+                name: '',
+                email: '',
+                phone: '',
+                role: 'Member',
+                status: 'Active'
+            },
+            exportFormat: null,
+            isExporting: false,
+            exportMenuOpen: false,
+
+            init() {
+                if (this.selectedChama) this.loadChamaData(this.selectedChama);
+            },
+            async loadChamaData(chamaId) { /*...*/ },
+            async addMember() { /*...*/ },
+            exportData(format) { /*...*/ },
+            notify(type, msg) {
+                this.$dispatch('show-toast', {
+                    type,
+                    message: msg
+                });
+            },
+        }));
+    });
+    // members.js - external Alpine.js component
+
+    // members.js - external Alpine.js component
+
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('membersComponent', () => ({
+            selectedChama: null,
+            members: [],
+            stats: {
+                totalMembers: 0,
+                activeMembers: 0,
+                pendingInvites: 0
+            },
+            showAddMemberModal: false,
+            newMember: {
+                name: '',
+                email: '',
+                phone: '',
+                role: 'Member',
+                status: 'Active'
+            },
+            exportFormat: null,
+            isExporting: false,
+            exportMenuOpen: false,
+
+            init() {
+                if (this.selectedChama) {
+                    this.loadChamaData(this.selectedChama);
+                }
+            },
+
+            async loadChamaData(chamaId) {
+                if (!chamaId) return;
+                try {
+                    const response = await fetch(`/chama-admin/chama-members/${chamaId}`);
+                    if (!response.ok) throw new Error('Failed to load data');
+                    const data = await response.json();
+
+                    this.members = data.members.map(m => ({
+                        ...m,
+                        joined: new Date(m.joined_at).toLocaleDateString(),
+                    }));
+                    this.stats = {
+                        totalMembers: data.total_members,
+                        activeMembers: data.active_members,
+                        pendingInvites: data.pending_invites,
+                    };
+                } catch (err) {
+                    console.error(err);
+                    this.notify('error', 'Failed to load chama data');
+                }
+            },
+
+            async addMember() {
+                if (!this.selectedChama) {
+                    this.notify('error', 'Please select a Chama first');
+                    return;
+                }
+                if (!this.newMember.name || !this.newMember.email) {
+                    this.notify('error', 'Name and email are required');
+                    return;
+                }
+                // Safely retrieve CSRF token without optional chaining formatting issues
+                const metaTag = document.querySelector('meta[name="csrf-token"]');
+                const csrfToken = metaTag ? metaTag.getAttribute('content') : null;
+                if (!csrfToken) {
+                    console.warn('CSRF token meta tag not found');
+                }
+                try {
+                    const response = await fetch('/chama-admin/add-member', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(csrfToken && {
+                                'X-CSRFToken': csrfToken
+                            }),
+                        },
+                        body: JSON.stringify({
+                            chama_id: this.selectedChama,
+                            ...this.newMember
+                        }),
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Failed to add member');
+                    }
+                    await this.loadChamaData(this.selectedChama);
+                    this.newMember = {
+                        name: '',
+                        email: '',
+                        phone: '',
+                        role: 'Member',
+                        status: 'Active'
+                    };
+                    this.showAddMemberModal = false;
+                    this.notify('success', 'Member added successfully');
+                } catch (err) {
+                    console.error(err);
+                    this.notify('error', err.message);
+                }
+            },
+
+            exportData(format) {
+                if (!this.selectedChama || !this.members.length) {
+                    this.notify('error', 'Please select a Chama with members to export');
+                    return;
+                }
+                this.exportFormat = format;
+                this.isExporting = true;
+
+                const url = `/chama-admin/export/${this.selectedChama}/${format}`;
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Export failed');
+                        const cd = response.headers.get('Content-Disposition');
+                        let filename = `chama-members.${format}`;
+                        if (cd) {
+                            const match = cd.match(/filename="?([^"]*)"?/);
+                            if (match && match[1]) filename = match[1];
+                        }
+                        return response.blob().then(blob => ({
+                            blob,
+                            filename
+                        }));
+                    })
+                    .then(({
+                        blob,
+                        filename
+                    }) => {
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        this.notify('error', `Export ${format.toUpperCase()} failed`);
+                    })
+                    .finally(() => {
+                        this.isExporting = false;
+                        this.exportMenuOpen = false;
+                        this.exportFormat = null;
+                    });
+            },
+
+            notify(type, message) {
+                this.$dispatch('show-toast', {
+                    type,
+                    message
+                });
+            },
+        }));
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ChamaSmart</title>
+    <script src="//unpkg.com/alpinejs" defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+        
+        .gradient-border {
+            border: 2px solid transparent;
+            background: linear-gradient(white, white), linear-gradient(45deg, #6366f1, #8b5cf6);
+            background-clip: padding-box, border-box;
+        }
+        
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
+        
+        @keyframes blob {
+            0%,
+            100% {
+                border-radius: 60% 40% 30% 70%/60% 30% 70% 40%;
+            }
+            50% {
+                border-radius: 30% 60% 70% 40%/50% 60% 30% 60%;
+            }
+        }
+        
+        .bg-mesh {
+            background-image: radial-gradient(#e0e7ff 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+{% include 'notifications/flash_messages.html' %}
+
+<body class="font-['Inter'] bg-gray-50 bg-mesh" x-data="{
+    email: '',
+    password: '',
+    showPassword: false,
+    rememberMe: false,
+    isLoading: false,
+    error: null,
+    
+    async login() {
+        this.isLoading = true;
+        this.error = null;
+        
+        // Simulate API call with a timeout
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // For demo purposes only - in production, this would be an actual API call
+        if (this.email && this.password) {
+            // Redirect to dashboard (in real app)
+            console.log('Login successful');
+            window.location.href = '/dashboard';
+        } else {
+            this.error = 'Please enter both email and password';
+        }
+        
+        this.isLoading = false;
+    }
+}" x-cloak>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md fixed w-full z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <a href="/" class="flex items-center space-x-2 group">
+                    <!-- Animated SVG Logo -->
+                    <svg class="w-10 h-10 group-hover:rotate-[30deg] transition-transform duration-500" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="45" fill="url(#gradient)" stroke-width="4"/>
+                        <path d="M35 55L50 35L65 55" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                        <path d="M35 65L50 45L65 65" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#6366F1"/>
+                                <stop offset="100%" stop-color="#8B5CF6"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+
+                    <!-- Text Logo with Gradient Animation -->
+                    <span class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent group-hover:bg-gradient-to-l transition-all duration-500">
+                        Chama<span class="font-light">Smart</span>
+                    </span>
+                </a>
+                <div class="hidden md:flex items-center space-x-4">
+                    <a href="{{ url_for('auth.login') }}" class="text-gray-800 hover:text-indigo-600 px-4 py-2 rounded-md text-sm font-medium">
+                      Login
+                    </a>
+                    <a href="{{ url_for('auth.signup') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 transition duration-300">
+                      Get Started
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+
+    <!-- Main Content -->
+    <main class="min-h-screen flex items-center justify-center pt-20 pb-12 px-4">
+        <div class="w-full max-w-md">
+            <!-- Decorative Blob Element -->
+            <div class="relative mb-8">
+                <div class="absolute -top-16 -left-16 w-32 h-32 bg-indigo-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+                <div class="absolute -top-16 left-8 w-32 h-32 bg-purple-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+                <div class="absolute -top-16 left-32 w-32 h-32 bg-pink-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+            </div>
+
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                    <span class="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                        Welcome Back
+                    </span>
+                </h1>
+                <p class="text-gray-600">Sign in to continue to your Chama</p>
+            </div>
+
+            <!-- Login Form -->
+            <form action="{{ url_for('auth.login') }}" method="post" class="bg-white rounded-2xl p-8 shadow-xl relative gradient-border max-w-md mx-auto">
+                <!-- Error Alert -->
+                <div x-show="error" x-transition class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 text-red-500">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-600" x-text="error"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email -->
+                <div class="mb-6">
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                    <div class="relative">
+                        <input id="email" name="email" x-model="email" type="email" required class="w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all" placeholder="john@example.com" :class="{'border-red-500': error && !email}">
+                        <div class="absolute left-3 top-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 p-1.5 rounded-lg">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="mb-8">
+                    <div class="flex justify-between mb-2">
+                        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <a href="/forgot-password" class="text-sm text-indigo-600 hover:text-indigo-800 hover:underline">
+                            Forgot password?
+                        </a>
+                    </div>
+                    <div class="relative">
+                        <input id="password" name="password" x-model="password" :type="showPassword ? 'text' : 'password'" required class="w-full pl-12 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all" placeholder="••••••••••••"
+                            :class="{'border-red-500': error && !password}">
+                        <div class="absolute left-3 top-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 p-1.5 rounded-lg">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
+                        <button type="button" @click="showPassword = !showPassword" class="absolute right-3 top-3.5 text-gray-400 hover:text-indigo-600 transition-colors focus:outline-none">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path x-show="!showPassword" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path x-show="!showPassword" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                <path x-show="showPassword" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7 1.275-4.057 5.065-7 9.543-7 1.16 0 2.281.195 3.318.553M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Remember Me -->
+                <div class="flex items-center justify-between mb-8">
+                    <label class="flex items-center space-x-3">
+                        <input 
+                            type="checkbox" 
+                            name="remember" 
+                            x-model="rememberMe"
+                            class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 focus:ring-offset-0"
+                        >
+                        <span class="text-sm text-gray-600">Remember me</span>
+                    </label>
+                </div>
+
+                <!-- Login Button -->
+                <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-6 rounded-lg font-semibold 
+                           hover:from-indigo-700 hover:to-purple-700 transition-all transform hover:scale-[1.01] shadow-lg
+                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" :disabled="isLoading">
+                    <span x-show="!isLoading">Sign In</span>
+                    <div x-show="isLoading" class="flex justify-center items-center">
+                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Signing In...</span>
+                    </div>
+                </button>
+
+                <!-- Social Login Options -->
+                <div class="mt-8">
+                    <div class="relative">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-200"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-4 bg-white text-gray-500">Or continue with</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 mt-6">
+                        <a href="#" class="flex items-center justify-center py-2.5 border rounded-lg shadow-sm hover:bg-gray-50 transition-colors">
+                            <svg class="h-5 w-5" viewBox="0 0 24 24">
+                                <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
+                                    <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z"/>
+                                    <path fill="#34A853" d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.824 60.329 L -10.684 57.329 C -11.764 58.049 -13.134 58.489 -14.754 58.489 C -17.884 58.489 -20.534 56.379 -21.484 53.529 L -25.464 53.529 L -25.464 56.619 C -23.494 60.539 -19.444 63.239 -14.754 63.239 Z"/>
+                                    <path fill="#FBBC05" d="M -21.484 53.529 C -21.734 52.809 -21.864 52.039 -21.864 51.239 C -21.864 50.439 -21.724 49.669 -21.484 48.949 L -21.484 45.859 L -25.464 45.859 C -26.284 47.479 -26.754 49.299 -26.754 51.239 C -26.754 53.179 -26.284 54.999 -25.464 56.619 L -21.484 53.529 Z"/>
+                                    <path fill="#EA4335" d="M -14.754 43.989 C -12.984 43.989 -11.404 44.599 -10.154 45.789 L -6.734 42.369 C -8.804 40.429 -11.514 39.239 -14.754 39.239 C -19.444 39.239 -23.494 41.939 -25.464 45.859 L -21.484 48.949 C -20.534 46.099 -17.884 43.989 -14.754 43.989 Z"/>
+                                </g>
+                            </svg>
+                        </a>
+
+                        <a href="#" class="flex items-center justify-center py-2.5 border rounded-lg shadow-sm hover:bg-gray-50 transition-colors">
+                            <svg class="h-5 w-5" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Registration Link -->
+                <p class="text-center text-gray-600 mt-8">
+                    Don't have an account?
+                    <a href="{{ url_for('auth.signup') }}" class="text-indigo-600 hover:underline font-medium">
+                        Sign up now
+                    </a>
+                </p>
+            </form>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white py-8 border-t">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="md:flex md:justify-between">
+                <div class="mb-6 md:mb-0">
+                    <a href="/" class="flex items-center space-x-2">
+                        <svg class="w-8 h-8" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="50" r="45" fill="url(#footerGradient)" stroke-width="4"/>
+                            <path d="M35 55L50 35L65 55" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                            <path d="M35 65L50 45L65 65" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                            <defs>
+                                <linearGradient id="footerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#6366F1"/>
+                                    <stop offset="100%" stop-color="#8B5CF6"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <span class="text-xl font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                            ChamaSmart
+                        </span>
+                    </a>
+                    <p class="mt-3 text-gray-500 text-sm">
+                        Smart financial management for Chamas and investment groups
+                    </p>
+                </div>
+                <div class="grid grid-cols-2 gap-8 sm:grid-cols-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900 tracking-wider uppercase">Product</h3>
+                        <ul class="mt-4 space-y-2">
+                            <li><a href="#" class="text-gray-500 hover:text-indigo-600 text-sm">Features</a></li>
+                            <li><a href="#" class="text-gray-500 hover:text-indigo-600 text-sm">Pricing</a></li>
+                            <li><a href="#" class="text-gray-500 hover:text-indigo-600 text-sm">Testimonials</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900 tracking-wider uppercase">Support</h3>
+                        <ul class="mt-4 space-y-2">
+                            <li><a href="#" class="text-gray-500 hover:text-indigo-600 text-sm">Help Center</a></li>
+                            <li><a href="#" class="text-gray-500 hover:text-indigo-600 text-sm">Contact Us</a></li>
+                            <li><a href="#" class="text-gray-500 hover:text-indigo-600 text-sm">Community</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900 tracking-wider uppercase">Legal</h3>
+                        <ul class="mt-4 space-y-2">
+                            <li><a href="#" class="text-gray-500 hover:text-indigo-600 text-sm">Privacy Policy</a></li>
+                            <li><a href="#" class="text-gray-500 hover:text-indigo-600 text-sm">Terms of Service</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-8 border-t border-gray-200 pt-8 md:flex md:items-center md:justify-between">
+                <div class="flex space-x-6 md:order-2">
+                    <a href="#" class="text-gray-400 hover:text-indigo-600">
+                        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"/>
+                        </svg>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-indigo-600">
+                        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clip-rule="evenodd"/>
+                        </svg>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-indigo-600">
+                        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">                    </svg>
+                    </a>
+                </div>
+                <div class="text-center text-sm text-gray-500 mt-8 md:mt-0 md:order-1">
+                    © 2023 ChamaSmart. All rights reserved.
+                </div>
+            </div>
+        </div>
+    </footer>

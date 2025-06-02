@@ -1,0 +1,1382 @@
+{% extends 'dashboard_chama_admin/layout.html' %} {% block title %}Financial Reports{% endblock %} {% block content %}
+<div class="min-h-screen p-6 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300" x-data="reportManager()">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-200">Financial Reports</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Comprehensive financial overview and analytics for your Chama</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg flex items-center gap-2 shadow-md transition-colors duration-200">
+                     <svg class="w-5 h-5 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l3-3m-3 3l-3-3m2-8h7a2 2 0 012 2v7m-3 4H9a2 2 0 01-2-2v-7m3-4v4l3 3m3-3V9l-3 3"></path></svg>
+                     <span>Export</span>
+                     <svg class="w-4 h-4" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                 </button>
+                <div x-show="open" @click.outside="open = false" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75"
+                    x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border dark:border-gray-700 z-10 origin-top-right">
+                    <div class="p-2 space-y-1">
+                        <button @click="exportPDF('full')" class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors duration-150">Full Report (PDF)</button>
+                        <button @click="exportPDF('summary')" class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors duration-150">Summary Report (PDF)</button>
+                        <button @click="exportExcel()" class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors duration-150">Export to Excel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 mb-6 shadow-sm border dark:border-gray-700">
+        <div class="flex flex-col sm:flex-row items-center gap-4">
+            <label for="quick-range" class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Range:</label>
+            <div class="relative w-full sm:w-auto">
+                <select id="quick-range" x-model="quickDateRange" @change="setQuickDateRange($event.target.value)" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm dark:text-gray-200 pr-8">
+                      <option value="">Custom Range</option>
+                      <option value="Last 7 Days">Last 7 Days</option>
+                      <option value="Last 30 Days">Last 30 Days</option>
+                      <option value="QTD">Quarter to Date</option>
+                      <option value="YTD">Year to Date</option>
+                      <option value="All Time">All Time</option>
+                  </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                </div>
+            </div>
+            <span class="text-gray-500 dark:text-gray-400 hidden sm:block">or</span>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <input type="date" x-model="startDate" :disabled="quickDateRange !== ''" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                <span class="text-gray-500 dark:text-gray-400">to</span>
+                <input type="date" x-model="endDate" :disabled="quickDateRange !== ''" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+            </div>
+            <div class="flex gap-2 w-full sm:w-auto mt-3 sm:mt-0">
+                <button @click="applyDateFilter" :disabled="quickDateRange !== '' || (!startDate && !endDate)" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">Apply</button>
+                <button @click="resetDateFilter" :disabled="!startDate && !endDate && quickDateRange === ''" class="px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg w-full sm:w-auto text-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-indigo-200 dark:border-indigo-900/50 flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Contributions</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1" x-text="formatCurrency(stats.totalContributions)"></p>
+            </div>
+            <div class="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-full">
+                <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-blue-200 dark:border-blue-900/50 flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Loans Outstanding</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1" x-text="formatCurrency(stats.totalLoansOutstanding)"></p>
+            </div>
+            <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-red-200 dark:border-red-900/50 flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Expenses</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1" x-text="formatCurrency(stats.totalExpenses)"></p>
+            </div>
+            <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+                <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v5m-3-5v5m0 0h6m-6 0h-2m2 0h2M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2M9 7h6m0 0H9m0 0V9h6V7M9 7h6"></path></svg>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-green-200 dark:border-green-900/50 flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Savings Balance</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1" x-text="formatCurrency(stats.totalSavingsBalance)"></p>
+            </div>
+            <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+                <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1h-2M4 7l2 1M4 7l2-1M4 7h2m12 7v-2m0 0h-2m2 0h2M12 12l-3 3m3-3l3 3m0 0l-3 3m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
+        <nav class="flex overflow-x-auto border-b dark:border-gray-700">
+            <template x-for="(tab, index) in tabs" :key="index">
+                 <button @click="activeTab = index"
+                         :class="{
+                             'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === index,
+                             'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300': activeTab !== index
+                         }"
+                         class="flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 focus:outline-none transition-colors duration-200">
+                     <span x-text="tab"></span>
+                 </button>
+             </template>
+        </nav>
+
+        <div class="p-6">
+            <template x-if="activeTab === 0">
+                 <div class="space-y-8">
+                     <div class="grid lg:grid-cols-2 gap-6">
+                         <div class="bg-gray-50 dark:bg-gray-900/20 p-4 rounded-xl border dark:border-gray-700">
+                             <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Income vs Expenses</h3>
+                             <canvas id="incomeExpenseChart" class="w-full h-64"></canvas>
+                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Monthly breakdown of income and expenses over the selected period.</p>
+                         </div>
+                         <div class="bg-gray-50 dark:bg-gray-900/20 p-4 rounded-xl border dark:border-gray-700">
+                             <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Cash Flow Statement Summary</h3>
+                             <div class="space-y-4 text-gray-700 dark:text-gray-300">
+                                 <div class="flex justify-between items-center border-b dark:border-gray-600 pb-2">
+                                     <span class="font-medium">Cash Flow from Operating Activities</span>
+                                     <span x-text="formatCurrency(cashFlowData.operating)" class="font-semibold" :class="cashFlowData.operating >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"></span>
+                                 </div>
+                                  <div class="flex justify-between items-center border-b dark:border-gray-600 pb-2">
+                                      <span class="font-medium">Cash Flow from Investing Activities</span>
+                                      <span x-text="formatCurrency(cashFlowData.investing)" class="font-semibold" :class="cashFlowData.investing >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"></span>
+                                  </div>
+                                   <div class="flex justify-between items-center border-b dark:border-gray-600 pb-2">
+                                       <span class="font-medium">Cash Flow from Financing Activities</span>
+                                       <span x-text="formatCurrency(cashFlowData.financing)" class="font-semibold" :class="cashFlowData.financing >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"></span>
+                                   </div>
+                                  <div class="flex justify-between items-center font-bold text-gray-900 dark:text-gray-100 pt-2">
+                                      <span>Net Change in Cash</span>
+                                      <span x-text="formatCurrency(cashFlowData.netChange)" :class="cashFlowData.netChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"></span>
+                                  </div>
+                                   <div class="flex justify-between items-center text-gray-600 dark:text-gray-400 text-sm">
+                                       <span>Cash at Beginning of Period</span>
+                                       <span x-text="formatCurrency(cashFlowData.startingBalance)"></span>
+                                   </div>
+                                    <div class="flex justify-between items-center text-gray-600 dark:text-gray-400 text-sm">
+                                        <span>Cash at End of Period</span>
+                                        <span x-text="formatCurrency(cashFlowData.endingBalance)"></span>
+                                    </div>
+                             </div>
+                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Summary of cash inflows and outflows categorized by activity.</p>
+                         </div>
+                     </div>
+
+                     <div>
+                          <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Financial Activity Breakdown</h3>
+                          <div class="overflow-x-auto rounded-lg border dark:border-gray-700 shadow-sm">
+                              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                  <thead class="bg-gray-50 dark:bg-gray-700">
+                                      <tr>
+                                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Category</th>
+                                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
+                                          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
+                                          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">% of Total</th>
+                                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Trend vs Prev Period</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                      <template x-for="item in financialSummaryData" :key="item.category">
+                                          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200" x-text="item.category"></td>
+                                               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" x-text="item.type"></td>
+                                              <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200" x-text="formatCurrency(item.amount)"></td>
+                                              <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200">
+                                                  <span x-text="item.percentage !== null ? `${item.percentage}%` : 'N/A'"></span>
+                                              </td>
+                                              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                  <div class="flex items-center justify-start" x-show="item.trend !== null">
+                                                      <span x-text="item.trend > 0 ? '↑' : (item.trend < 0 ? '↓' : '—')"
+                                                            :class="item.trend > 0 ? 'text-green-600 dark:text-green-400' : (item.trend < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500')"></span>
+                                                      <span x-text="item.trend !== null ? `${Math.abs(item.trend).toFixed(1)}%` : 'N/A'"
+                                                            :class="item.trend > 0 ? 'text-green-600 dark:text-green-400' : (item.trend < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500')"></span>
+                                                  </div>
+                                                   <span x-show="item.trend === null" class="text-gray-500 dark:text-gray-400">N/A</span>
+                                              </td>
+                                          </tr>
+                                      </template>
+            <tr class="bg-gray-100 dark:bg-gray-700 font-bold">
+                <td colspan="2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">Net Income</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right" x-text="formatCurrency(stats.netIncome)" :class="stats.netIncome >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"></td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">N/A</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <div class="flex items-center justify-start">
+                        <span x-text="stats.netIncomeTrend > 0 ? '↑' : (stats.netIncomeTrend < 0 ? '↓' : '—')" :class="stats.netIncomeTrend > 0 ? 'text-green-600 dark:text-green-400' : (stats.netIncomeTrend < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500')"></span>
+                        <span x-text="stats.netIncomeTrend !== null ? `${Math.abs(stats.netIncomeTrend).toFixed(1)}%` : 'N/A'" :class="stats.netIncomeTrend > 0 ? 'text-green-600 dark:text-green-400' : (stats.netIncomeTrend < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500')"></span>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</template>
+
+<template x-if="activeTab === 1">
+                 <div class="space-y-8">
+                     <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Contributions Overview</h3>
+                     <div class="grid lg:grid-cols-3 gap-6">
+                         <div class="bg-gray-50 dark:bg-gray-900/20 p-4 rounded-xl border dark:border-gray-700 lg:col-span-1">
+                             <h4 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Contribution Types Breakdown</h4>
+                             <canvas id="contributionPieChart" class="w-full h-48"></canvas>
+                              <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Distribution of contributions by type.</p>
+                         </div>
+                         <div class="bg-gray-50 dark:bg-gray-900/20 p-4 rounded-xl border dark:border-gray-700 lg:col-span-2">
+                              <h4 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Contribution Summary by Type</h4>
+                              <div class="overflow-x-auto rounded-lg border dark:border-gray-700 shadow-sm">
+                                   <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                       <thead class="bg-gray-50 dark:bg-gray-700">
+                                           <tr>
+                                               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
+                                               <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Amount</th>
+                                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">% of Total</th>
+                                           </tr>
+                                       </thead>
+                                       <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                            <template x-for="item in contributionsData.summary" :key="item.type">
+                                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200" x-text="item.type"></td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200" x-text="formatCurrency(item.amount)"></td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200">
+                                                         <span x-text="item.percentage !== null ? `${item.percentage}%` : 'N/A'"></span>
+                                                    </td>
+                                                </tr>
+                                            </template>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<div>
+    <h4 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Recent Contributions</h4>
+    <div class="overflow-x-auto rounded-lg border dark:border-gray-700 shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Member</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <template x-for="item in contributionsData.details" :key="item.date + item.member">
+                                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200" x-text="formatDate(item.date)"></td>
+                                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200" x-text="item.member"></td>
+                                                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" x-text="item.type"></td>
+                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200" x-text="formatCurrency(item.amount)"></td>
+                                             </tr>
+                                         </template>
+                <template x-if="contributionsData.details.length === 0">
+                                              <tr>
+                                                  <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">No contribution data available for this period.</td>
+                                              </tr>
+                                          </template>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+</template>
+
+<template x-if="activeTab === 2">
+                  <div class="space-y-8">
+                      <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Loans Overview</h3>
+                       <div class="grid lg:grid-cols-3 gap-6">
+                            <div class="bg-gray-50 dark:bg-gray-900/20 p-4 rounded-xl border dark:border-gray-700 lg:col-span-1">
+                                <h4 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Loan Status Distribution (by Amount)</h4>
+                                <canvas id="loanStatusPieChart" class="w-full h-48"></canvas>
+                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Distribution of outstanding loan amounts by status (Outstanding, Overdue).</p>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-gray-900/20 p-4 rounded-xl border dark:border-gray-700 lg:col-span-2">
+                                <h4 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Loan Summary by Status</h4>
+                                <div class="overflow-x-auto rounded-lg border dark:border-gray-700 shadow-sm">
+                                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                         <thead class="bg-gray-50 dark:bg-gray-700">
+                                             <tr>
+                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Count</th>
+                                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Amount</th>
+                                                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">% of Outstanding</th>
+                                             </tr>
+                                         </thead>
+                                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                              <template x-for="item in loansData.summary" :key="item.status">
+                                                  <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200" x-text="item.status"></td>
+                                                       <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200" x-text="item.count"></td>
+                                                      <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200" x-text="formatCurrency(item.amount)"></td>
+                                                       <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200">
+                                                           <span x-text="item.percentage !== null && item.status !== 'Fully Paid' ? `${item.percentage}%` : 'N/A'"></span>
+                                                       </td>
+                                                  </tr>
+                                              </template>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<div>
+    <h4 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Loan Details</h4>
+    <div class="overflow-x-auto rounded-lg border dark:border-gray-700 shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Loan ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Member</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Balance</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Due Date</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <template x-for="item in loansData.details" :key="item.id">
+                                               <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200" x-text="item.id"></td>
+                                                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200" x-text="item.member"></td>
+                                                   <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200" x-text="formatCurrency(item.amount)"></td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200" x-text="formatCurrency(item.balance)"></td>
+                                                   <td class="px-6 py-4 whitespace-nowrap text-sm" :class="{
+                                                        'text-green-600 dark:text-green-400': item.status === 'Fully Paid',
+                                                        'text-blue-600 dark:text-blue-400': item.status === 'Outstanding',
+                                                        'text-red-600 dark:text-red-400': item.status === 'Overdue'
+                                                   }" x-text="item.status"></td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" x-text="formatDate(item.dueDate)"></td>
+                                               </tr>
+                                           </template>
+                <template x-if="loansData.details.length === 0">
+                                                <tr>
+                                                    <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">No loan data available for this period.</td>
+                                                </tr>
+                                            </template>
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+</template>
+
+<template x-if="activeTab === 3">
+                   <div class="space-y-8">
+                       <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Expenses Overview</h3>
+                        <div class="grid lg:grid-cols-3 gap-6">
+                             <div class="bg-gray-50 dark:bg-gray-900/20 p-4 rounded-xl border dark:border-gray-700 lg:col-span-1">
+                                 <h4 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Expenses by Category</h4>
+                                 <canvas id="expenseCategoryPieChart" class="w-full h-48"></canvas>
+                                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Distribution of expenses across different categories.</p>
+                             </div>
+                             <div class="bg-gray-50 dark:bg-gray-900/20 p-4 rounded-xl border dark:border-gray-700 lg:col-span-2">
+                                 <h4 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Expense Summary by Category</h4>
+                                 <div class="overflow-x-auto rounded-lg border dark:border-gray-700 shadow-sm">
+                                      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                          <thead class="bg-gray-50 dark:bg-gray-700">
+                                              <tr>
+                                                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Category</th>
+                                                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Amount</th>
+                                                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">% of Total</th>
+                                              </tr>
+                                          </thead>
+                                          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                               <template x-for="item in expensesData.summary" :key="item.category">
+                                                   <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                                       <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200" x-text="item.category"></td>
+                                                       <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200" x-text="formatCurrency(item.amount)"></td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200">
+                                                           <span x-text="item.percentage !== null ? `${item.percentage}%` : 'N/A'"></span>
+                                                        </td>
+                                                   </tr>
+                                               </template>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<div>
+    <h4 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Recent Expenses</h4>
+    <div class="overflow-x-auto rounded-lg border dark:border-gray-700 shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Description</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Category</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <template x-for="item in expensesData.details" :key="item.date + item.description">
+                                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200" x-text="formatDate(item.date)"></td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200" x-text="item.description"></td>
+                                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" x-text="item.category"></td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200" x-text="formatCurrency(item.amount)"></td>
+                                                </tr>
+                                            </template>
+                <template x-if="expensesData.details.length === 0">
+                                                 <tr>
+                                                     <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">No expense data available for this period.</td>
+                                                 </tr>
+                                             </template>
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+</template>
+
+<template x-if="activeTab === 4">
+                    <div class="space-y-8">
+                        <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Savings Overview</h3>
+                         <div class="grid lg:grid-cols-2 gap-6">
+                              <div class="bg-gray-50 dark:bg-gray-900/20 p-4 rounded-xl border dark:border-gray-700">
+                                  <h4 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Savings Balance Trend</h4>
+                                  <canvas id="savingsTrendLineChart" class="w-full h-64"></canvas>
+                                   <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Growth of total savings balance over time.</p>
+                              </div>
+                              <div class="bg-gray-50 dark:bg-gray-900/20 p-4 rounded-xl border dark:border-gray-700">
+                                  <h4 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Savings Key Metrics</h4>
+                                  <div class="space-y-4 text-gray-700 dark:text-gray-300">
+                                       <template x-for="item in savingsData.summary" :key="item.type">
+                                           <div class="flex justify-between items-center border-b dark:border-gray-600 pb-2">
+                                               <span class="font-medium" x-text="item.type"></span>
+                                               <div class="flex items-center gap-2">
+                                                    <span x-text="formatCurrency(item.amount)" class="font-semibold" :class="item.trend >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"></span>
+                                                    <span x-show="item.trend !== undefined" class="text-xs"
+                                                         :class="item.trend > 0 ? 'text-green-600 dark:text-green-400' : (item.trend < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500')">
+                                                         (<span x-text="item.trend > 0 ? '↑' : (item.trend < 0 ? '↓' : '—')"></span><span x-text="`${Math.abs(item.trend).toFixed(1)}%`"></span>)
+                                                    </span>
+                                               </div>
+                                           </div>
+                                       </template>
+</div>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Summary of total balance, deposits, and withdrawals.</p>
+</div>
+</div>
+
+<div>
+    <h4 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Recent Savings Transactions</h4>
+    <div class="overflow-x-auto rounded-lg border dark:border-gray-700 shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Member</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Balance After</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <template x-for="item in savingsData.details" :key="item.date + item.member + item.type">
+                                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200" x-text="formatDate(item.date)"></td>
+                                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200" x-text="item.member"></td>
+                                                      <td class="px-6 py-4 whitespace-nowrap text-sm" :class="{
+                                                           'text-green-600 dark:text-green-400': item.type === 'Deposit',
+                                                           'text-red-600 dark:text-red-400': item.type === 'Withdrawal'
+                                                      }" x-text="item.type"></td>
+                                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200" x-text="formatCurrency(item.amount)"></td>
+                                                      <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200" x-text="formatCurrency(item.balanceAfter)"></td>
+                                                 </tr>
+                                             </template>
+                <template x-if="savingsData.details.length === 0">
+                                                  <tr>
+                                                      <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">No savings transaction data available for this period.</td>
+                                                  </tr>
+                                              </template>
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+</template>
+
+</div>
+</div>
+
+<div x-show="showPdfPreview" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 transition-opacity duration-300" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+    x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col transform transition-transform duration-300" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+        x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-700 rounded-t-xl">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100" x-text="pdfTitle"></h3>
+            <button @click="showPdfPreview = false" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors duration-200">
+                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                 </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6 text-gray-800 dark:text-gray-200">
+            <div class="bg-gray-100 dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+                <h4 class="text-xl font-bold mb-4" x-text="pdfTitle"></h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Report generated for the period: <span x-text="startDate ? `${formatDate(startDate)} to ${formatDate(endDate)}` : 'All Time'"></span></p>
+
+                <div x-show="pdfTitle.includes('Full') || activeTab === 0" class="mb-6">
+                    <h5 class="text-lg font-semibold mb-3 border-b border-gray-300 dark:border-gray-600 pb-1">Financial Summary</h5>
+                    <p class="text-gray-700 dark:text-gray-300">This section would contain the Financial Summary table and potentially the Income vs Expense chart image.</p>
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 mt-4">
+                        <thead class="bg-gray-100 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Category</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <template x-for="item in financialSummaryData">
+                                     <tr>
+                                         <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200" x-text="item.category"></td>
+                                         <td class="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-200" x-text="formatCurrency(item.amount)"></td>
+                                     </tr>
+                                 </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div x-show="pdfTitle.includes('Full') || activeTab === 1" class="mb-6">
+                    <h5 class="text-lg font-semibold mb-3 border-b border-gray-300 dark:border-gray-600 pb-1">Contributions Report</h5>
+                    <p class="text-gray-700 dark:text-gray-300">This section would contain the Contributions summary and details tables and potentially the pie chart image.</p>
+                </div>
+
+                <p class="text-sm text-gray-600 dark:text-gray-400 italic mt-8">Note: Actual PDF generation would capture the rendered content dynamically.</p>
+
+            </div>
+        </div>
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 bg-gray-50 dark:bg-gray-700 rounded-b-xl">
+            <button @click="showPdfPreview = false" class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200">Close</button>
+            <button @click="downloadPDF" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors duration-200">Download PDF</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+</div>
+
+<script>
+    // Ensure Chart.js is available globally before initializing
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('reportManager', () => ({
+            // State variables
+            startDate: '',
+            endDate: '',
+            quickDateRange: '', // State for quick selection dropdown
+            activeTab: 0,
+            tabs: ['Financial Summary', 'Contributions', 'Loans', 'Expenses', 'Savings'],
+            showPdfPreview: false,
+            pdfTitle: '',
+            charts: {}, // Store chart instances
+
+            // --- Static Data (Simulating data fetched from backend) ---
+            // These structures hold the data for the currently selected date range
+            stats: {
+                totalContributions: 0,
+                contributionChange: null, // Change vs previous period (simulated)
+                totalLoansOutstanding: 0,
+                totalExpenses: 0,
+                totalSavingsBalance: 0,
+                netIncome: 0, // Contributions - Expenses
+                netIncomeTrend: null // Trend vs previous period (simulated)
+            },
+
+            financialSummaryData: [], // For the table in Financial Summary
+            incomeExpenseChartData: {
+                labels: [],
+                datasets: []
+            }, // Data for the chart
+            cashFlowData: {
+                operating: 0,
+                investing: 0,
+                financing: 0,
+                netChange: 0,
+                startingBalance: 0,
+                endingBalance: 0,
+            },
+
+            contributionsData: {
+                summary: [], // e.g., by type, by member
+                details: [], // list of contributions
+                chartData: {
+                    labels: [],
+                    datasets: []
+                } // e.g., pie chart for types
+            },
+
+            loansData: {
+                summary: [], // e.g., by status, by member
+                details: [], // list of loans
+                chartData: {
+                    labels: [],
+                    datasets: []
+                } // e.g., pie chart for statuses
+            },
+
+            expensesData: {
+                summary: [], // e.g., by category
+                details: [], // list of expenses
+                chartData: {
+                    labels: [],
+                    datasets: []
+                } // e.g., pie chart for categories
+            },
+
+            savingsData: {
+                summary: [], // e.g., total balance, growth
+                details: [], // list of transactions
+                chartData: {
+                    labels: [],
+                    datasets: []
+                } // e.g., line chart for balance over time
+            },
+
+            // --- Initialization ---
+            init() {
+                // Set initial date range (e.g., Year to Date) and fetch data
+                this.setQuickDateRange('YTD'); // This will also call fetchData and initCharts
+            },
+
+            // --- Data Fetching (Simulated) ---
+            // In a real application, this method would make AJAX calls
+            // to your backend API to get data based on the selected dates.
+            fetchData() {
+                console.log(`Simulating data fetch for range: ${this.startDate || 'All Time'} to ${this.endDate || ''}`);
+
+                // --- STATIC DUMMY DATA (Replace with actual API calls) ---
+                // This static data simulates what you might get back from an API
+                // for a *specific* date range (like YTD up to Oct 2024).
+                // For a real app, the backend would filter and aggregate this data.
+
+                const today = new Date();
+                const currentMonthIndex = today.getMonth(); // 0 for Jan, 11 for Dec
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const monthsUntilNow = monthNames.slice(0, currentMonthIndex + 1);
+
+                this.stats = {
+                    totalContributions: 315000 + (currentMonthIndex + 1) * 10000, // Simulate growth
+                    contributionChange: 18.2,
+                    totalLoansOutstanding: 155000,
+                    totalExpenses: 92000 + (currentMonthIndex + 1) * 3000, // Simulate growth
+                    totalSavingsBalance: 580000 + (currentMonthIndex + 1) * 20000, // Simulate growth
+                    netIncome: (315000 + (currentMonthIndex + 1) * 10000) - (92000 + (currentMonthIndex + 1) * 3000),
+                    netIncomeTrend: 15.0 // Simulated
+                };
+
+                const simTotalIncome = this.stats.totalContributions + 35000; // Add loan interest income sim
+                const simTotalExpenses = this.stats.totalExpenses;
+
+                this.financialSummaryData = [{
+                        category: 'Total Income',
+                        amount: simTotalIncome,
+                        percentage: null,
+                        trend: 12.5,
+                        type: 'Income'
+                    }, {
+                        category: 'Total Expenses',
+                        amount: simTotalExpenses,
+                        percentage: null,
+                        trend: -4.2,
+                        type: 'Expense'
+                    },
+                    // Detailed breakdown example
+                    {
+                        category: 'Member Contributions',
+                        amount: this.stats.totalContributions,
+                        percentage: ((this.stats.totalContributions / simTotalIncome) * 100).toFixed(1),
+                        trend: 15.0,
+                        type: 'Income'
+                    }, {
+                        category: 'Loan Interest Income',
+                        amount: 35000,
+                        percentage: ((35000 / simTotalIncome) * 100).toFixed(1),
+                        trend: 8.5,
+                        type: 'Income'
+                    }, {
+                        category: 'Admin Expenses',
+                        amount: 40000,
+                        percentage: ((40000 / simTotalExpenses) * 100).toFixed(1),
+                        trend: -5.1,
+                        type: 'Expense'
+                    }, {
+                        category: 'Operational Costs',
+                        amount: 25000,
+                        percentage: ((25000 / simTotalExpenses) * 100).toFixed(1),
+                        trend: -2.0,
+                        type: 'Expense'
+                    }, {
+                        category: 'Event Costs',
+                        amount: simTotalExpenses - 40000 - 25000,
+                        percentage: (((simTotalExpenses - 40000 - 25000) / simTotalExpenses) * 100).toFixed(1),
+                        trend: -10.5,
+                        type: 'Expense'
+                    },
+                ];
+
+
+                // Simulate monthly data up to the current month
+                const simIncomeData = [65000, 59000, 80000, 81000, 56000, 55000, 70000, 75000, 82000, 90000, 88000, 95000].slice(0, currentMonthIndex + 1);
+                const simExpenseData = [28000, 48000, 40000, 19000, 86000, 27000, 35000, 30000, 45000, 50000, 48000, 55000].slice(0, currentMonthIndex + 1);
+
+                this.incomeExpenseChartData = {
+                    labels: monthsUntilNow,
+                    datasets: [{
+                        label: 'Income',
+                        data: simIncomeData,
+                        backgroundColor: '#4F46E5', // Indigo
+                        borderColor: '#4F46E5',
+                        borderWidth: 1
+                    }, {
+                        label: 'Expenses',
+                        data: simExpenseData,
+                        backgroundColor: '#10B981', // Emerald
+                        borderColor: '#10B981',
+                        borderWidth: 1
+                    }]
+                };
+
+                // Simple simulated cash flow
+                this.cashFlowData = {
+                    operating: this.stats.totalContributions - this.stats.totalExpenses + 35000, // Sim: Contributions - Expenses + Loan Interest
+                    investing: -50000, // Sim: Investment outflow
+                    financing: 100000, // Sim: Capital injection
+                    netChange: (this.stats.totalContributions - this.stats.totalExpenses + 35000) - 50000 + 100000,
+                    startingBalance: 350000, // Sim
+                    endingBalance: 350000 + (this.stats.totalContributions - this.stats.totalExpenses + 35000) - 50000 + 100000, // Sim
+                };
+
+
+                this.contributionsData = {
+                    summary: [{
+                            type: 'Regular Contributions',
+                            amount: this.stats.totalContributions * 0.6,
+                            percentage: null
+                        }, // Sim breakdown
+                        {
+                            type: 'Emergency Fund',
+                            amount: this.stats.totalContributions * 0.2,
+                            percentage: null
+                        }, {
+                            type: 'Project Fund',
+                            amount: this.stats.totalContributions * 0.2,
+                            percentage: null
+                        },
+                    ],
+                    details: [ // Sample recent contributions
+                        {
+                            date: '2024-10-26',
+                            member: 'Alice',
+                            type: 'Regular Contributions',
+                            amount: 5000
+                        }, {
+                            date: '2024-10-25',
+                            member: 'Bob',
+                            type: 'Emergency Fund',
+                            amount: 2000
+                        }, {
+                            date: '2024-10-24',
+                            member: 'Charlie',
+                            type: 'Regular Contributions',
+                            amount: 5000
+                        }, {
+                            date: '2024-10-23',
+                            member: 'David',
+                            type: 'Project Fund',
+                            amount: 3000
+                        }, {
+                            date: '2024-10-22',
+                            member: 'Eve',
+                            type: 'Regular Contributions',
+                            amount: 5000
+                        }, {
+                            date: '2024-10-21',
+                            member: 'Frank',
+                            type: 'Emergency Fund',
+                            amount: 2000
+                        },
+                    ].filter(item => { // Basic date filtering simulation
+                        const itemDate = new Date(item.date);
+                        const start = this.startDate ? new Date(this.startDate) : new Date(0);
+                        const end = this.endDate ? new Date(this.endDate) : new Date();
+                        return itemDate >= start && itemDate <= end;
+                    }),
+                    chartData: {
+                        labels: ['Regular Contributions', 'Emergency Fund', 'Project Fund'],
+                        datasets: [{
+                            data: [this.stats.totalContributions * 0.6, this.stats.totalContributions * 0.2, this.stats.totalContributions * 0.2], // Match summary amounts
+                            backgroundColor: ['#4F46E5', '#10B981', '#F59E0B'], // Indigo, Emerald, Amber
+                            hoverOffset: 4
+                        }]
+                    }
+                };
+                // Calculate percentages for contribution summary
+                const totalContributionsForSummary = this.contributionsData.summary.reduce((sum, item) => sum + item.amount, 0);
+                this.contributionsData.summary.forEach(item => {
+                    item.percentage = totalContributionsForSummary > 0 ? ((item.amount / totalContributionsForSummary) * 100).toFixed(1) : 0;
+                });
+
+
+                this.loansData = {
+                    summary: [{
+                        status: 'Outstanding',
+                        count: 15,
+                        amount: 155000,
+                        percentage: null
+                    }, {
+                        status: 'Fully Paid',
+                        count: 28,
+                        amount: 0,
+                        percentage: null
+                    }, {
+                        status: 'Overdue',
+                        count: 3,
+                        amount: 45000,
+                        percentage: null
+                    }, ],
+                    details: [ // Sample loan details
+                        {
+                            id: 'L001',
+                            member: 'Alice',
+                            amount: 30000,
+                            balance: 15000,
+                            status: 'Outstanding',
+                            dueDate: '2025-01-15'
+                        }, {
+                            id: 'L005',
+                            member: 'David',
+                            amount: 10000,
+                            balance: 10000,
+                            status: 'Overdue',
+                            dueDate: '2024-11-01'
+                        }, {
+                            id: 'L010',
+                            member: 'Eve',
+                            amount: 5000,
+                            balance: 0,
+                            status: 'Fully Paid',
+                            dueDate: '2024-10-15'
+                        }, {
+                            id: 'L012',
+                            member: 'Frank',
+                            amount: 25000,
+                            balance: 20000,
+                            status: 'Outstanding',
+                            dueDate: '2025-02-20'
+                        },
+                    ].filter(item => { // Basic date filtering simulation (based on dueDate?)
+                        const itemDate = new Date(item.dueDate); // Or loan date, depending on report focus
+                        const start = this.startDate ? new Date(this.startDate) : new Date(0);
+                        const end = this.endDate ? new Date(this.endDate) : new Date('2100-12-31'); // Filter loans active within range? Complex. Simpler: loans issued/due in range.
+                        // For simplicity, let's not filter details by date range in this static example, just show recent/relevant ones.
+                        return true; // Show all sample loan details
+                    }),
+                    chartData: {
+                        labels: ['Outstanding', 'Fully Paid', 'Overdue'],
+                        datasets: [{
+                            data: [155000, 0, 45000], // Using amount for size representation
+                            backgroundColor: ['#3B82F6', '#10B981', '#EF4444'], // Blue, Emerald, Red
+                            hoverOffset: 4
+                        }]
+                    }
+                };
+                // Calculate percentages for loan summary (based on total amount in summary)
+                const totalLoanSummaryAmount = this.loansData.summary.reduce((sum, item) => sum + item.amount, 0);
+                this.loansData.summary.forEach(item => {
+                    item.percentage = totalLoanSummaryAmount > 0 ? ((item.amount / totalLoanSummaryAmount) * 100).toFixed(1) : 0;
+                });
+
+
+                this.expensesData = {
+                    summary: [{
+                            category: 'Admin',
+                            amount: 40000,
+                            percentage: null
+                        }, {
+                            category: 'Operational',
+                            amount: 25000,
+                            percentage: null
+                        }, {
+                            category: 'Event',
+                            amount: this.stats.totalExpenses - 40000 - 25000,
+                            percentage: null
+                        }, // Remaining
+                    ],
+                    details: [ // Sample expense details
+                        {
+                            date: '2024-10-20',
+                            description: 'Office Supplies',
+                            category: 'Admin',
+                            amount: 5000
+                        }, {
+                            date: '2024-10-18',
+                            description: 'Internet Bill',
+                            category: 'Operational',
+                            amount: 3000
+                        }, {
+                            date: '2024-10-10',
+                            description: 'Team Lunch',
+                            category: 'Event',
+                            amount: 8000
+                        }, {
+                            date: '2024-10-05',
+                            description: 'Electricity Bill',
+                            category: 'Operational',
+                            amount: 4000
+                        },
+                    ].filter(item => { // Basic date filtering simulation
+                        const itemDate = new Date(item.date);
+                        const start = this.startDate ? new Date(this.startDate) : new Date(0);
+                        const end = this.endDate ? new Date(this.endDate) : new Date();
+                        return itemDate >= start && itemDate <= end;
+                    }),
+                    chartData: {
+                        labels: ['Admin', 'Operational', 'Event'],
+                        datasets: [{
+                            data: [40000, 25000, this.stats.totalExpenses - 40000 - 25000], // Match summary amounts
+                            backgroundColor: ['#F59E0B', '#EF4444', '#6366F1'], // Amber, Red, Violet
+                            hoverOffset: 4
+                        }]
+                    }
+                };
+                // Calculate percentages for expense summary
+                const totalExpensesForSummary = this.expensesData.summary.reduce((sum, item) => sum + item.amount, 0);
+                this.expensesData.summary.forEach(item => {
+                    item.percentage = totalExpensesForSummary > 0 ? ((item.amount / totalExpensesForSummary) * 100).toFixed(1) : 0;
+                });
+
+
+                this.savingsData = {
+                    summary: [{
+                            type: 'Total Balance',
+                            amount: this.stats.totalSavingsBalance,
+                            trend: 10.0
+                        }, {
+                            type: 'Deposits YTD',
+                            amount: 150000 + currentMonthIndex * 5000,
+                            trend: 12.0
+                        }, // Sim growth
+                        {
+                            type: 'Withdrawals YTD',
+                            amount: 20000 + currentMonthIndex * 1000,
+                            trend: -5.0
+                        }, // Sim growth
+                    ],
+                    details: [ // Sample savings transactions
+                        {
+                            date: '2024-10-28',
+                            member: 'Alice',
+                            type: 'Deposit',
+                            amount: 10000,
+                            balanceAfter: 590000
+                        }, {
+                            date: '2024-10-27',
+                            member: 'Bob',
+                            type: 'Withdrawal',
+                            amount: 5000,
+                            balanceAfter: 585000
+                        }, // Correct balance after sim
+                        {
+                            date: '2024-10-25',
+                            member: 'Charlie',
+                            type: 'Deposit',
+                            amount: 15000,
+                            balanceAfter: 600000
+                        }, {
+                            date: '2024-10-20',
+                            member: 'David',
+                            type: 'Deposit',
+                            amount: 8000,
+                            balanceAfter: 592000
+                        }, // Correct balance after sim
+                    ].filter(item => { // Basic date filtering simulation
+                        const itemDate = new Date(item.date);
+                        const start = this.startDate ? new Date(this.startDate) : new Date(0);
+                        const end = this.endDate ? new Date(this.endDate) : new Date();
+                        return itemDate >= start && itemDate <= end;
+                    }),
+                    chartData: { // Example: Balance over time (simulated monthly points)
+                        labels: monthsUntilNow,
+                        datasets: [{
+                            label: 'Savings Balance',
+                            data: [400000, 420000, 450000, 480000, 500000, 520000, 540000, 560000, 575000, 580000, 600000, 620000].slice(0, currentMonthIndex + 1), // Sim growth
+                            borderColor: '#10B981', // Emerald
+                            backgroundColor: 'rgba(16, 185, 129, 0.2)', // Emerald with opacity for fill
+                            tension: 0.3, // Smoother line
+                            fill: true, // Fill area under line
+                            pointBackgroundColor: '#10B981',
+                            pointBorderColor: '#fff',
+                            pointHoverRadius: 6,
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: '#10B981',
+                            borderJoinStyle: 'round', // Smooth corners
+                            capBezierPoints: true,
+                        }]
+                    }
+                };
+
+
+                // --- Re-initialize charts after data is updated ---
+                this.$nextTick(() => {
+                    this.initCharts();
+                });
+            },
+
+            // --- Chart Initialization and Update ---
+            initCharts() {
+                // Destroy existing charts if they exist to prevent memory leaks/duplicates
+                Object.values(this.charts).forEach(chart => {
+                    if (chart) {
+                        chart.destroy();
+                    }
+                });
+                this.charts = {}; // Reset chart instances container
+
+                // Helper to create charts
+                const createChart = (ctxId, config) => {
+                    const ctx = document.getElementById(ctxId);
+                    if (ctx) {
+                        // Ensure the canvas is available and not somehow null
+                        try {
+                            this.charts[ctxId] = new Chart(ctx, config);
+                        } catch (error) {
+                            console.error(`Error initializing chart ${ctxId}:`, error);
+                        }
+                    } else {
+                        console.warn(`Canvas element with ID "${ctxId}" not found.`);
+                    }
+                };
+
+                // --- Financial Summary Charts ---
+                createChart('incomeExpenseChart', {
+                    type: 'bar',
+                    data: this.incomeExpenseChartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: this.$el.classList.contains('dark') ? '#E5E7EB' : '#374151' // Light gray in dark mode, dark gray in light mode
+                                }
+                            },
+                            title: {
+                                display: false, // Title is in H3
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.raw !== null) {
+                                            label += this.formatCurrency(context.raw);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: (value) => this.formatCurrency(value),
+                                    color: this.$el.classList.contains('dark') ? '#9CA3AF' : '#6B7280' // Medium gray
+                                },
+                                grid: {
+                                    color: this.$el.classList.contains('dark') ? 'rgba(107, 114, 128, 0.3)' : 'rgba(229, 231, 235, 1)' // Grid line color
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: this.$el.classList.contains('dark') ? '#9CA3AF' : '#6B7280' // Medium gray
+                                },
+                                grid: {
+                                    color: this.$el.classList.contains('dark') ? 'rgba(107, 114, 128, 0.3)' : 'rgba(229, 231, 235, 1)' // Grid line color
+                                }
+                            }
+                        }
+                    }
+                });
+
+
+                // --- Contributions Charts ---
+                createChart('contributionPieChart', {
+                    type: 'doughnut',
+                    data: this.contributionsData.chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '60%', // Make it a doughnut chart
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: this.$el.classList.contains('dark') ? '#E5E7EB' : '#374151'
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((sum, amount) => sum + amount, 0);
+                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                        return `${label}: <span class="math-inline">\{this\.formatCurrency\(value\)\} \(</span>{percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+
+                // --- Loans Charts ---
+                createChart('loanStatusPieChart', {
+                    type: 'pie', // Or doughnut
+                    data: this.loansData.chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: this.$el.classList.contains('dark') ? '#E5E7EB' : '#374151'
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((sum, amount) => sum + amount, 0);
+                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                        let statusInfo = `${label}: ${this.formatCurrency(value)}`;
+                                        if (label !== 'Fully Paid') { // Percentage is only meaningful for outstanding/overdue relative to total outstanding
+                                            const totalOutstanding = this.loansData.summary.find(s => s.status === 'Outstanding').amount + this.loansData.summary.find(s => s.status === 'Overdue').amount;
+                                            const percentageOfOutstanding = totalOutstanding > 0 ? ((value / totalOutstanding) * 100).toFixed(1) : 0;
+                                            statusInfo += ` (${percentageOfOutstanding}% of Outstanding)`;
+                                        }
+                                        return statusInfo;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+
+                // --- Expenses Charts ---
+                createChart('expenseCategoryPieChart', {
+                    type: 'pie', // Or bar
+                    data: this.expensesData.chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: this.$el.classList.contains('dark') ? '#E5E7EB' : '#374151'
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((sum, amount) => sum + amount, 0);
+                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                        return `${label}: <span class="math-inline">\{this\.formatCurrency\(value\)\} \(</span>{percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+
+                // --- Savings Charts ---
+                createChart('savingsTrendLineChart', {
+                    type: 'line',
+                    data: this.savingsData.chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: this.$el.classList.contains('dark') ? '#E5E7EB' : '#374151'
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.raw !== null) {
+                                            label += this.formatCurrency(context.raw);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false, // Savings balance might not start at zero
+                                ticks: {
+                                    callback: (value) => this.formatCurrency(value),
+                                    color: this.$el.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
+                                },
+                                grid: {
+                                    color: this.$el.classList.contains('dark') ? 'rgba(107, 114, 128, 0.3)' : 'rgba(229, 231, 235, 1)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: this.$el.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
+                                },
+                                grid: {
+                                    color: this.$el.classList.contains('dark') ? 'rgba(107, 114, 128, 0.3)' : 'rgba(229, 231, 235, 1)'
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+
+            // --- Date Range Logic ---
+            applyDateFilter() {
+                // Logic to apply the custom date filter
+                // This would typically involve calling fetchData with the new range
+                if (this.startDate && this.endDate) {
+                    this.quickDateRange = ''; // Clear quick selection if custom range is set
+                    this.fetchData(); // Simulate fetching data for the custom range
+                } else if (!this.startDate && !this.endDate) {
+                    // If apply is clicked with empty dates, maybe reset or show error
+                    this.resetDateFilter(); // Treat empty custom dates as a reset
+                }
+            },
+
+            resetDateFilter() {
+                // Reset dates and quick select, then fetch default data (e.g., YTD)
+                this.startDate = '';
+                this.endDate = '';
+                this.quickDateRange = ''; // Reset quick select dropdown state
+                this.setQuickDateRange('YTD'); // Default to YTD or another desired range
+            },
+
+            setQuickDateRange(range) {
+                this.quickDateRange = range; // Update dropdown state immediately
+                const now = new Date();
+                let start = null;
+                let end = new Date(now);
+                end.setHours(23, 59, 59, 999); // End of day
+
+                switch (range) {
+                    case 'Last 7 Days':
+                        start = new Date(now);
+                        start.setDate(now.getDate() - 6); // 7 days includes today
+                        start.setHours(0, 0, 0, 0);
+                        break;
+                    case 'Last 30 Days':
+                        start = new Date(now);
+                        start.setDate(now.getDate() - 29); // 30 days includes today
+                        start.setHours(0, 0, 0, 0);
+                        break;
+                    case 'QTD':
+                        const currentMonth = now.getMonth();
+                        const currentQuarter = Math.floor(currentMonth / 3);
+                        start = new Date(now.getFullYear(), currentQuarter * 3, 1);
+                        start.setHours(0, 0, 0, 0);
+                        break;
+                    case 'YTD':
+                        start = new Date(now.getFullYear(), 0, 1);
+                        start.setHours(0, 0, 0, 0);
+                        break;
+                    case 'All Time':
+                        start = new Date(0); // Epoch start
+                        end = new Date(); // Today
+                        end.setHours(23, 59, 59, 999);
+                        break;
+                    default:
+                        // If "Custom Range" is selected in the dropdown, clear dates
+                        this.startDate = '';
+                        this.endDate = '';
+                        // Don't fetch data automatically here, wait for "Apply" button
+                        return;
+                }
+
+                // Set date inputs based on the calculated range
+                this.startDate = start ? start.toISOString().split('T')[0] : '';
+                this.endDate = end ? end.toISOString().split('T')[0] : '';
+
+                // Fetch data for the selected quick range
+                this.fetchData();
+            },
+
+            // --- Formatting Helpers ---
+            formatCurrency(value) {
+                if (value === null || value === undefined) return 'KES 0.00'; // Handle null/undefined
+                // Ensure value is a number before formatting
+                const numericValue = parseFloat(value);
+                if (isNaN(numericValue)) return 'Invalid Amount';
+
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'KES', // Use KES for Kenyan Shilling
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                }).format(numericValue);
+            },
+
+            formatDate(isoString) {
+                if (!isoString) return '';
+                try {
+                    const date = new Date(isoString);
+                    if (isNaN(date)) return 'Invalid Date'; // Handle invalid dates
+
+                    // Format as DD/MM/YYYY or similar standard format
+                    return date.toLocaleDateString('en-GB'); // Use 'en-GB' for DD/MM/YYYY or 'en-US' for MM/DD/YYYY
+                } catch (e) {
+                    console.error("Error formatting date:", isoString, e);
+                    return 'Invalid Date';
+                }
+            },
+
+            // --- Report Export (Placeholders) ---
+            exportPDF(type) {
+                this.pdfTitle = type === 'full' ? 'Full Financial Report' : (type === 'summary' ? 'Financial Summary Report' : 'Custom Report');
+                this.showPdfPreview = true;
+                console.log(`Preparing PDF for type: ${type}`);
+                // In a real app, you would gather the data for the selected range
+                // and tab (if type is not 'full') and prepare it for the modal
+                // or pass it to a server-side PDF generation endpoint.
+            },
+
+            exportExcel() {
+                console.log('Initiating Excel export...');
+                // This typically involves sending the current report data (based on active tab and dates)
+                // to a backend endpoint that generates and sends an Excel file.
+                alert('Simulating Excel export. In a real app, this would download a file.');
+            },
+
+            downloadPDF() {
+                console.log('Simulating PDF download...');
+                // In a real app with client-side PDF generation (e.g., using jsPDF or html2canvas):
+                // 1. Hide UI elements not needed in the PDF (like buttons, modal chrome).
+                // 2. Select the report content area (e.g., the tab content or a dedicated div in the modal).
+                // 3. Use html2canvas to render the HTML to a canvas.
+                // 4. Use jsPDF to add the canvas (as an image) and other elements (title, date) to a PDF document.
+                // 5. Save the PDF document.
+                // 6. Show hidden UI elements.
+
+                // If using server-side PDF generation:
+                // 1. Send a request to the backend endpoint with the selected date range and report type.
+                // 2. The backend generates the PDF and sends it back as a file download.
+                // 3. You would likely close the modal or show a success message after initiating the download.
+
+                alert('Simulating PDF download. In a real app, a PDF file would be generated and downloaded.');
+                this.showPdfPreview = false; // Close modal after simulating download
+            }
+        }));
+    });
+</script>
+{% endblock %}

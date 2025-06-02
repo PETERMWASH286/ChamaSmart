@@ -1,0 +1,1040 @@
+{% extends "dashboard_chama_admin/layout.html" %} {% block title %}Manage Chamas{% endblock %} {% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+{% endblock %} {% block content %}
+
+<div class="px-4 py-6 space-y-8">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Manage Chamas</h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">Manage all your chama groups and activities</p>
+        </div>
+        <button id="newChamaBtn" class="bg-primary-600 hover:bg-primary-700 text-black dark:text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md">
+        <i class="fas fa-plus"></i>
+        <span>New Chama</span>
+      </button>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border-l-4 border-primary-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Chamas</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100" id="totalChamas"></p>
+                </div>
+                <i class="fas fa-users text-primary-500 text-xl"></i>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Members</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100" id="totalMembers"></p>
+                </div>
+                <i class="fas fa-user-check text-green-500 text-xl"></i>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border-l-4 border-purple-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Pending Invites</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100" id="totalPendingInvites"></p>
+                </div>
+                <i class="fas fa-envelope-open-text text-purple-500 text-xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chama Selection Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="chamaGrid">
+        <!-- Chama cards will be generated here by JavaScript -->
+    </div>
+
+    <!-- Chama Management Section -->
+    <div id="chamaManagementSection" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 space-y-8" style="display: none;">
+        <!-- Chama Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100" id="selectedChamaName">Family Savings</h2>
+                <p class="text-gray-500 dark:text-gray-400 mt-1">Manage settings and members for this chama</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="deleteChamaBtn" class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-500 
+                             flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
+                    <i class="fas fa-trash"></i>
+                    <span>Delete Chama</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabs with Details, Members & Activity Log -->
+        <div class="p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <!-- Tabs Navigation -->
+            <div class="border-b border-gray-200 dark:border-gray-700">
+                <nav class="flex gap-6 -mb-px">
+                    <button id="detailsTabBtn" class="py-3 border-b-2 border-primary-500 text-primary-600 dark:text-primary-400 font-medium">
+                        Details
+                    </button>
+
+                    <button id="membersTabBtn" class="py-3 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 font-medium transition-colors">
+                        Members
+                    </button>
+
+                    <button id="activityTabBtn" class="py-3 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 font-medium transition-colors">
+                        Activity Log
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Details Tab -->
+            <div id="detailsTab" class="mt-6">
+                <!-- Chama Details Form -->
+                <form id="chamaDetailsForm" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="space-y-1">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Chama Name</label>
+                        <input type="text" id="detailsChamaName" value="Family Savings" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contribution Amount</label>
+                        <div class="flex items-center gap-2">
+                            <span class="text-gray-500 dark:text-gray-400" id="detailsCurrency">KES</span>
+                            <input type="number" id="detailsContribution" value="5000" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all">
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contribution Frequency</label>
+                        <select id="detailsFrequency" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly" selected>Monthly</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-2 space-y-1">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Chama Rules</label>
+                        <textarea id="detailsRules" rows="4" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all">Must contribute before 5th of every month</textarea>
+                    </div>
+
+                    <div class="md:col-span-2 flex justify-end gap-3 pt-4">
+                        <button type="button" id="detailsCancelBtn" class="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-6 py-2.5 bg-gray-800 dark:bg-primary-600 hover:bg-gray-900 dark:hover:bg-primary-700 
+                        text-white rounded-lg transition-colors duration-200">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Members Tab -->
+            <div id="membersTab" class="mt-6" style="display: none;">
+                <h2 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Chama Members</h2>
+                <div id="membersList">
+                    <table class="w-full text-left bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow">
+                        <thead class="bg-gray-100 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-2">Name</th>
+                                <th class="px-4 py-2">Email</th>
+                                <th class="px-4 py-2">Phone</th>
+                                <th class="px-4 py-2">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="membersTableBody">
+                            <tr class="border-b border-gray-200 dark:border-gray-700">
+                                <td class="px-4 py-2">John Doe</td>
+                                <td class="px-4 py-2">john@example.com</td>
+                                <td class="px-4 py-2">+254712345678</td>
+                                <td class="px-4 py-2">
+                                    <button class="remove-member-btn text-red-600 hover:underline">Remove</button>
+                                </td>
+                            </tr>
+                            <tr class="border-b border-gray-200 dark:border-gray-700">
+                                <td class="px-4 py-2">Jane Smith</td>
+                                <td class="px-4 py-2">jane@example.com</td>
+                                <td class="px-4 py-2">+254723456789</td>
+                                <td class="px-4 py-2">
+                                    <button class="remove-member-btn text-red-600 hover:underline">Remove</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noMembersMessage" style="display: none;">
+                    <p class="text-gray-500 dark:text-gray-400">No members have been added yet.</p>
+                </div>
+
+                <h3 class="mt-6 font-medium text-gray-800 dark:text-gray-200">Add New Member</h3>
+                <form id="addMemberForm" class="grid grid-cols-1 md:grid-cols-3 gap-5 mt-4">
+                    <div class="space-y-1">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                        <input type="text" id="newMemberName" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                        <input type="email" id="newMemberEmail" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Phone</label>
+                        <input type="tel" id="newMemberPhone" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all">
+                    </div>
+                    <div class="md:col-span-3 flex justify-end pt-4">
+                        <button type="submit" class="px-6 py-2.5 bg-gray-800 dark:bg-primary-600 hover:bg-gray-900 dark:hover:bg-primary-700 
+                        text-white rounded-lg transition-colors duration-200">
+                            Add Member
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Activity Log Tab -->
+            <div id="activityTab" class="mt-6" style="display: none;">
+                <h2 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Activity Log</h2>
+                <ul class="space-y-2" id="activityLogList">
+                    <li class="flex justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                        <span class="font-medium text-gray-700 dark:text-gray-300">2023-04-15 14:30</span>
+                        <span class="text-gray-600 dark:text-gray-400">Member John Doe added</span>
+                    </li>
+                    <li class="flex justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                        <span class="font-medium text-gray-700 dark:text-gray-300">2023-04-10 09:15</span>
+                        <span class="text-gray-600 dark:text-gray-400">Contribution amount updated to 5,000 KES</span>
+                    </li>
+                </ul>
+                <div id="noActivityMessage" style="display: none;">
+                    <li class="text-gray-500 dark:text-gray-400">No activity recorded.</li>
+                </div>
+
+                <h3 class="mt-6 font-medium text-gray-800 dark:text-gray-200">Add Activity</h3>
+                <form id="addActivityForm" class="grid grid-cols-1 gap-5 mt-4">
+                    <div class="space-y-1 md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Message</label>
+                        <textarea id="newActivityMessage" rows="3" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"></textarea>
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button type="submit" class="px-6 py-2.5 bg-gray-800 dark:bg-primary-600 hover:bg-gray-900 dark:hover:bg-primary-700 
+                        text-white rounded-lg transition-colors duration-200">
+                            Add Log
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Enhanced Invite Members Section -->
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
+            <div class="max-w-2xl space-y-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Invite Members</h3>
+
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
+                    <div class="flex items-center gap-3">
+                        <button id="emailInviteBtn" class="bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500 px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-envelope mr-2"></i>Email
+                        </button>
+                        <button id="smsInviteBtn" class="text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-mobile-alt mr-2"></i>SMS
+                        </button>
+                    </div>
+
+                    <div class="relative">
+                        <input type="file" id="csvUpload" class="hidden" accept=".csv">
+                        <label for="csvUpload" class="cursor-pointer px-4 py-2 rounded-lg border border-primary-500 text-primary-600
+                                      dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center gap-2">
+                            <i class="fas fa-file-csv"></i>
+                            <span>Bulk Import</span>
+                        </label>
+                        <a href="#" class="text-xs text-gray-500 dark:text-gray-400 hover:underline block mt-1">
+                            Download CSV Template
+                        </a>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-900">
+                        <div class="flex flex-wrap gap-2" id="membersToInviteContainer">
+                            <span class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full flex items-center 
+                                    text-sm text-gray-700 dark:text-gray-300">
+                                <span>john@example.com</span>
+                            <button class="remove-invite-btn ml-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                    ×
+                                </button>
+                            </span>
+                            <span class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full flex items-center 
+                                    text-sm text-gray-700 dark:text-gray-300">
+                                <span>sarah@example.com</span>
+                            <button class="remove-invite-btn ml-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                    ×
+                                </button>
+                            </span>
+                            <input id="newMemberInput" class="flex-1 min-w-[150px] px-2 py-1.5 border-0 bg-transparent 
+                                          focus:ring-0 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Add email addresses">
+                        </div>
+                    </div>
+                    <!-- Send Invitations Button -->
+                    <button id="sendInvitationsBtn" class="w-full sm:w-auto bg-gray-800 dark:bg-primary-600 hover:bg-gray-900 dark:hover:bg-primary-700 
+                           text-white px-6 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors">
+    <i class="fas fa-paper-plane"></i>
+    <span>Send Invitations</span>
+</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Chama Modal -->
+    <div id="newChamaModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" style="display: none;">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg space-y-6 shadow-xl">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">Create New Chama</h3>
+            <form id="newChamaForm" class="space-y-5">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Chama Name</label>
+                        <input type="text" id="newChamaName" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 
+                                      bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 
+                                      focus:border-primary-500 transition-all">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Initial Contribution
+                            </label>
+                            <input type="number" id="newChamaContribution" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 
+                                          bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 
+                                          focus:border-primary-500 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Currency
+                            </label>
+                            <select id="newChamaCurrency" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 
+                                         bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 
+                                         focus:border-primary-500 transition-all">
+                                <option>KES</option>
+                                <option>USD</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" id="cancelNewChamaBtn" class="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg 
+                                   text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                        Cancel
+                    </button>
+                    <!-- Create Chama Button -->
+                    <button type="submit" class="px-6 py-2.5 bg-gray-800 dark:bg-primary-600 hover:bg-gray-900 dark:hover:bg-primary-700 
+                           text-white rounded-lg transition-colors duration-200">
+    Create Chama
+</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let chamas = [];
+        let selectedChama = null;
+
+        // 1) Fetch chama data (including member lists)
+        fetch('/chama-admin/chamas-data')
+            .then(r => r.json())
+            .then(data => {
+                chamas = data.chamas.map(chama => ({
+                    id: chama.id,
+                    name: chama.name,
+                    status: chama.status,
+                    membersCount: chama.members_count,
+                    pendingInvites: chama.pending_invites,
+                    contribution: new Intl.NumberFormat('en-US').format(chama.contribution_amount),
+                    frequency: chama.frequency,
+                    currency: chama.currency,
+                    created: chama.created_at,
+                    rules: chama.rules,
+                    memberList: chama.members // <-- full array: [{name,email,phone}, …]
+                }));
+                populateChamaGrid();
+                updateStats();
+            })
+            .catch(console.error);
+
+        // 2) Render the grid of chama cards
+        function populateChamaGrid() {
+            const grid = document.getElementById('chamaGrid');
+            grid.innerHTML = '';
+            if (!chamas.length) {
+                grid.innerHTML = '<p class="text-gray-500">No chamas found.</p>';
+                return;
+            }
+            chamas.forEach(chama => {
+                const card = document.createElement('div');
+                card.className = 'group bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm cursor-pointer transition-all duration-200 hover:shadow-md hover:ring-1 hover:ring-gray-200 dark:hover:ring-gray-700';
+                card.innerHTML = `
+                <div class="flex justify-between items-start">
+                  <div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">${chama.name}</h3>
+                    <div class="flex items-center gap-2 mt-2">
+                      <span class="${chama.status==='active' ? 
+                        'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 
+                        'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'} px-2.5 py-1 rounded-full text-sm font-medium">
+                        ${chama.status}
+                      </span>
+                      <span class="text-sm text-gray-500 dark:text-gray-400">${chama.membersCount} members</span>
+                    </div>
+                  </div>
+                  <i class="fas fa-chevron-right text-gray-400 mt-1.5"></i>
+                </div>
+                <div class="mt-4 space-y-2 text-sm">
+                  <div class="flex justify-between items-center">
+                    <span class="text-gray-500 dark:text-gray-400">Contributions:</span>
+                    <span class="font-medium text-gray-900 dark:text-gray-100">
+                      ${chama.currency} ${chama.contribution} ${chama.frequency}
+                    </span>
+                  </div>
+                  <div class="text-gray-500 dark:text-gray-400">Created: ${chama.created}</div>
+                </div>`;
+                card.addEventListener('click', () => selectChama(chama));
+                grid.appendChild(card);
+            });
+        }
+
+        // 3) Update the three top‐level stats
+        function updateStats() {
+            document.getElementById('totalChamas').textContent = chamas.length;
+            document.getElementById('totalMembers').textContent = chamas.reduce((sum, c) => sum + c.membersCount, 0);
+            document.getElementById('totalPendingInvites').textContent = chamas.reduce((sum, c) => sum + c.pendingInvites, 0);
+        }
+
+        // 4) When a chama is clicked...
+        function selectChama(chama) {
+            selectedChama = chama;
+            // fill in the details form
+            document.getElementById('selectedChamaName').textContent = chama.name;
+            document.getElementById('detailsChamaName').value = chama.name;
+            document.getElementById('detailsContribution').value = chama.contribution.replace(/,/g, '');
+            document.getElementById('detailsCurrency').textContent = chama.currency;
+            document.getElementById('detailsFrequency').value = chama.frequency;
+            document.getElementById('detailsRules').value = chama.rules;
+            // show the management section
+            document.getElementById('chamaManagementSection').classList.remove('hidden');
+            // update the members table
+            updateMembersList();
+            // switch to the Details tab by default
+            showDetailsTab();
+        }
+        // Selected chama
+        let inviteMethod = 'email';
+        let membersToInvite = [];
+
+        // Initialize the page
+        populateChamaGrid();
+        updateStats();
+
+        // Event listeners
+        document.getElementById('newChamaBtn').addEventListener('click', () => {
+            document.getElementById('newChamaModal').style.display = 'flex';
+        });
+
+        document.getElementById('cancelNewChamaBtn').addEventListener('click', () => {
+            document.getElementById('newChamaModal').style.display = 'none';
+        });
+
+        document.getElementById('detailsTabBtn').addEventListener('click', showDetailsTab);
+        document.getElementById('membersTabBtn').addEventListener('click', showMembersTab);
+        document.getElementById('activityTabBtn').addEventListener('click', showActivityTab);
+
+        document.getElementById('emailInviteBtn').addEventListener('click', () => {
+            inviteMethod = 'email';
+            updateInviteMethodUI();
+        });
+
+        document.getElementById('smsInviteBtn').addEventListener('click', () => {
+            inviteMethod = 'sms';
+            updateInviteMethodUI();
+        });
+
+        // Add member form
+        document.getElementById('addMemberForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            addMember();
+        });
+
+        // Add activity form
+        document.getElementById('addActivityForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            addActivity();
+        });
+
+
+        // Handle the New Chama form submit
+        document.getElementById('newChamaForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('newChamaName').value.trim();
+            const amount = parseFloat(
+                document.getElementById('newChamaContribution').value
+            );
+            const currency = document.getElementById('newChamaCurrency').value;
+
+            if (!name || isNaN(amount) || !currency) {
+                alert('Please fill all fields');
+                return;
+            }
+
+            // POST to Flask
+            fetch('/chama-admin/chamas/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                            // If you have CSRF, include the token header here
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        contribution_amount: amount,
+                        currency: currency
+                    })
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error('Create failed');
+                    return res.json();
+                })
+                .then(data => {
+                    // Transform backend payload into your frontend model
+                    const newChama = {
+                        id: data.id,
+                        name: data.name,
+                        status: data.status,
+                        members: data.members_count, // usually zero initially
+                        pendingInvites: data.pending_invites, // zero
+                        contribution: new Intl.NumberFormat('en-US').format(data.contribution_amount),
+                        frequency: data.frequency,
+                        currency: data.currency,
+                        created: data.created_at,
+                        rules: data.rules
+                    };
+
+                    chamas.push(newChama);
+                    populateChamaGrid();
+                    updateStats();
+
+                    // Select & open the new chama
+                    selectChama(newChama);
+
+                    // Close & reset the modal
+                    document.getElementById('newChamaModal').style.display = 'none';
+                    document.getElementById('newChamaForm').reset();
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Error creating chama.');
+                });
+        });
+        // New member input
+        document.getElementById('newMemberInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const input = document.getElementById('newMemberInput');
+                if (input.value) {
+                    membersToInvite.push(input.value);
+                    input.value = '';
+                    updateInviteMembers();
+                }
+            }
+        });
+
+        // CSV file upload
+        document.getElementById('csvUpload').addEventListener('change', importMembers);
+
+        // Close modal when clicking outside
+        document.getElementById('newChamaModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('newChamaModal')) {
+                document.getElementById('newChamaModal').style.display = 'none';
+            }
+        });
+
+
+
+        function selectChama(chama) {
+            selectedChama = chama;
+
+            // Update UI with selected chama data
+            document.getElementById('selectedChamaName').textContent = chama.name;
+            document.getElementById('detailsChamaName').value = chama.name;
+            document.getElementById('detailsContribution').value = chama.contribution.replace(/,/g, '');
+            document.getElementById('detailsCurrency').textContent = chama.currency;
+            document.getElementById('detailsFrequency').value = chama.frequency;
+            document.getElementById('detailsRules').value = chama.rules;
+
+            // Show management section and hide grid
+            document.getElementById('chamaManagementSection').style.display = 'block';
+
+            // Show details tab by default
+            showDetailsTab();
+        }
+
+        function showDetailsTab() {
+            // Update active tab button
+            document.getElementById('detailsTabBtn').classList.add('border-b-2', 'border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+            document.getElementById('detailsTabBtn').classList.remove('text-gray-500', 'dark:text-gray-400');
+
+            document.getElementById('membersTabBtn').classList.remove('border-b-2', 'border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+            document.getElementById('membersTabBtn').classList.add('text-gray-500', 'dark:text-gray-400');
+
+            document.getElementById('activityTabBtn').classList.remove('border-b-2', 'border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+            document.getElementById('activityTabBtn').classList.add('text-gray-500', 'dark:text-gray-400');
+
+            // Show/hide content
+            document.getElementById('detailsTab').style.display = 'block';
+            document.getElementById('membersTab').style.display = 'none';
+            document.getElementById('activityTab').style.display = 'none';
+        }
+
+        function showMembersTab() {
+            // Update active tab button
+            document.getElementById('membersTabBtn').classList.add('border-b-2', 'border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+            document.getElementById('membersTabBtn').classList.remove('text-gray-500', 'dark:text-gray-400');
+
+            document.getElementById('detailsTabBtn').classList.remove('border-b-2', 'border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+            document.getElementById('detailsTabBtn').classList.add('text-gray-500', 'dark:text-gray-400');
+
+            document.getElementById('activityTabBtn').classList.remove('border-b-2', 'border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+            document.getElementById('activityTabBtn').classList.add('text-gray-500', 'dark:text-gray-400');
+
+            // Show/hide content
+            document.getElementById('detailsTab').style.display = 'none';
+            document.getElementById('membersTab').style.display = 'block';
+            document.getElementById('activityTab').style.display = 'none';
+
+            // Initialize members list
+            updateMembersList();
+        }
+
+        function showActivityTab() {
+            // Update active tab button
+            document.getElementById('activityTabBtn').classList.add('border-b-2', 'border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+            document.getElementById('activityTabBtn').classList.remove('text-gray-500', 'dark:text-gray-400');
+
+            document.getElementById('detailsTabBtn').classList.remove('border-b-2', 'border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+            document.getElementById('detailsTabBtn').classList.add('text-gray-500', 'dark:text-gray-400');
+
+            document.getElementById('membersTabBtn').classList.remove('border-b-2', 'border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+            document.getElementById('membersTabBtn').classList.add('text-gray-500', 'dark:text-gray-400');
+
+            // Show/hide content
+            document.getElementById('detailsTab').style.display = 'none';
+            document.getElementById('membersTab').style.display = 'none';
+            document.getElementById('activityTab').style.display = 'block';
+
+            // Initialize activity log
+            updateActivityLog();
+        }
+
+        function updateInviteMethodUI() {
+            if (inviteMethod === 'email') {
+                document.getElementById('emailInviteBtn').classList.add('bg-primary-100', 'dark:bg-primary-900/30', 'text-primary-600', 'dark:text-primary-400', 'ring-1', 'ring-primary-500');
+                document.getElementById('smsInviteBtn').classList.remove('bg-primary-100', 'dark:bg-primary-900/30', 'text-primary-600', 'dark:text-primary-400', 'ring-1', 'ring-primary-500');
+                document.getElementById('newMemberInput').placeholder = 'Add email addresses';
+            } else {
+                document.getElementById('smsInviteBtn').classList.add('bg-primary-100', 'dark:bg-primary-900/30', 'text-primary-600', 'dark:text-primary-400', 'ring-1', 'ring-primary-500');
+                document.getElementById('emailInviteBtn').classList.remove('bg-primary-100', 'dark:bg-primary-900/30', 'text-primary-600', 'dark:text-primary-400', 'ring-1', 'ring-primary-500');
+                document.getElementById('newMemberInput').placeholder = 'Add phone numbers';
+            }
+            updateInviteMembers();
+        }
+
+        function updateInviteMembers() {
+            const container = document.getElementById('membersToInviteContainer');
+            // Keep the input field
+            const inputField = document.getElementById('newMemberInput');
+            container.innerHTML = '';
+
+            membersToInvite.forEach((member, index) => {
+                const memberSpan = document.createElement('span');
+                memberSpan.className = 'bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full flex items-center text-sm text-gray-700 dark:text-gray-300';
+                memberSpan.innerHTML = `
+            <span>${member}</span>
+            <button class="remove-invite-btn ml-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" data-index="${index}">×</button>
+        `;
+                container.appendChild(memberSpan);
+            });
+
+            container.appendChild(inputField);
+
+            // Add event listeners to remove buttons
+            document.querySelectorAll('.remove-invite-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    membersToInvite.splice(index, 1);
+                    updateInviteMembers();
+                });
+            });
+        }
+
+        // 5) Populate the Members tab with the real memberList
+        function updateMembersList() {
+            const members = selectedChama.memberList || [];
+            const tbody = document.getElementById('membersTableBody');
+            tbody.innerHTML = '';
+
+            if (members.length) {
+                document.getElementById('membersList').style.display = '';
+                document.getElementById('noMembersMessage').style.display = 'none';
+
+                members.forEach((m, i) => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-gray-200 dark:border-gray-700';
+                    row.innerHTML = `
+                  <td class="px-4 py-2">${m.name}</td>
+                  <td class="px-4 py-2">${m.email}</td>
+                  <td class="px-4 py-2">${m.phone}</td>
+                  <td class="px-4 py-2">
+                    <button data-index="${i}" class="remove-member-btn text-red-600 hover:underline">Remove</button>
+                  </td>`;
+                    tbody.appendChild(row);
+                });
+
+                // Wire up the remove buttons
+                tbody.querySelectorAll('.remove-member-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const idx = +btn.dataset.index;
+                        selectedChama.memberList.splice(idx, 1);
+                        // (optionally send DELETE to your API here)
+                        updateMembersList();
+                    });
+                });
+            } else {
+                document.getElementById('membersList').style.display = 'none';
+                document.getElementById('noMembersMessage').style.display = '';
+            }
+        }
+
+        function updateActivityLog() {
+            // This would typically fetch activity logs from an API
+            // For now, we'll use dummy data
+            const activities = [{
+                date: '2023-04-15 14:30',
+                message: 'Member John Doe added'
+            }, {
+                date: '2023-04-10 09:15',
+                message: 'Contribution amount updated to 5,000 KES'
+            }];
+
+            const activityList = document.getElementById('activityLogList');
+            activityList.innerHTML = '';
+
+            if (activities.length > 0) {
+                document.getElementById('activityLogList').style.display = 'block';
+                document.getElementById('noActivityMessage').style.display = 'none';
+
+                activities.forEach(activity => {
+                    const item = document.createElement('li');
+                    item.className = 'flex justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 rounded-lg';
+                    item.innerHTML = `
+                <span class="font-medium text-gray-700 dark:text-gray-300">${activity.date}</span>
+                <span class="text-gray-600 dark:text-gray-400">${activity.message}</span>
+            `;
+                    activityList.appendChild(item);
+                });
+            } else {
+                document.getElementById('activityLogList').style.display = 'none';
+                document.getElementById('noActivityMessage').style.display = 'block';
+            }
+        }
+
+        function addMember() {
+            const name = document.getElementById('newMemberName').value;
+            const email = document.getElementById('newMemberEmail').value;
+            const phone = document.getElementById('newMemberPhone').value;
+
+            if (!name || !email || !phone) {
+                alert('Please fill all fields');
+                return;
+            }
+
+            // In a real app, you would send an API request to add the member
+
+            // Add to the UI
+            const tableBody = document.getElementById('membersTableBody');
+            const row = document.createElement('tr');
+            row.className = 'border-b border-gray-200 dark:border-gray-700';
+            row.innerHTML = `
+        <td class="px-4 py-2">${name}</td>
+        <td class="px-4 py-2">${email}</td>
+        <td class="px-4 py-2">${phone}</td>
+        <td class="px-4 py-2">
+            <button class="remove-member-btn text-red-600 hover:underline">Remove</button>
+        </td>
+    `;
+            tableBody.appendChild(row);
+
+            // Add event listener for the remove button
+            row.querySelector('.remove-member-btn').addEventListener('click', function() {
+                row.remove();
+                // In a real app, you would send an API request to remove the member
+                if (tableBody.children.length === 0) {
+                    document.getElementById('membersList').style.display = 'none';
+                    document.getElementById('noMembersMessage').style.display = 'block';
+                }
+            });
+
+            // Show the members list if it was hidden
+            document.getElementById('membersList').style.display = 'block';
+            document.getElementById('noMembersMessage').style.display = 'none';
+
+            // Clear the form
+            document.getElementById('newMemberName').value = '';
+            document.getElementById('newMemberEmail').value = '';
+            document.getElementById('newMemberPhone').value = '';
+
+            // Add activity log
+            addActivityLogEntry(`Member ${name} added`);
+        }
+
+        function addActivity() {
+            const message = document.getElementById('newActivityMessage').value;
+
+            if (!message) {
+                alert('Please enter a message');
+                return;
+            }
+
+            addActivityLogEntry(message);
+
+            // Clear the form
+            document.getElementById('newActivityMessage').value = '';
+        }
+
+        function addActivityLogEntry(message) {
+            // Get current date and time
+            const now = new Date();
+            const dateTime = now.toISOString().replace('T', ' ').substring(0, 16);
+
+            // In a real app, you would send an API request to add the activity log
+
+            // Add to the UI
+            const activityList = document.getElementById('activityLogList');
+            const item = document.createElement('li');
+            item.className = 'flex justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 rounded-lg';
+            item.innerHTML = `
+        <span class="font-medium text-gray-700 dark:text-gray-300">${dateTime}</span>
+        <span class="text-gray-600 dark:text-gray-400">${message}</span>
+    `;
+            activityList.insertBefore(item, activityList.firstChild);
+
+            // Show the activity list if it was hidden
+            document.getElementById('activityLogList').style.display = 'block';
+            document.getElementById('noActivityMessage').style.display = 'none';
+        }
+
+        function createNewChama() {
+            const name = document.getElementById('newChamaName').value;
+            const contribution = document.getElementById('newChamaContribution').value;
+            const currency = document.getElementById('newChamaCurrency').value;
+
+            if (!name || !contribution || !currency) {
+                alert('Please fill all fields');
+                return;
+            }
+
+            // In a real app, you would send an API request to create the chama
+
+            // Add to the data
+            const newChama = {
+                id: chamas.length + 1,
+                name: name,
+                status: 'active',
+                members: 1, // Initial member is the creator
+                pendingInvites: 0,
+                contribution: contribution.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','),
+                frequency: 'monthly',
+                currency: currency,
+                created: new Date().toISOString().split('T')[0],
+                rules: ''
+            };
+
+            chamas.push(newChama);
+
+            // Update UI
+            populateChamaGrid();
+            updateStats();
+
+            // Close modal
+            document.getElementById('newChamaModal').style.display = 'none';
+
+            // Clear form
+            document.getElementById('newChamaName').value = '';
+            document.getElementById('newChamaContribution').value = '';
+
+            // Select the new chama
+            selectChama(newChama);
+        }
+
+        function importMembers(event) {
+            const file = event.target.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const contents = e.target.result;
+                    const lines = contents.split('\n');
+
+                    // Skip header row
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (line) {
+                            const values = line.split(',');
+                            if (values.length >= 1) {
+                                const contact = values[0].trim();
+                                if (contact && !membersToInvite.includes(contact)) {
+                                    membersToInvite.push(contact);
+                                }
+                            }
+                        }
+                    }
+
+                    updateInviteMembers();
+                };
+                reader.readAsText(file);
+            }
+
+            // Reset the file input
+            event.target.value = '';
+        }
+
+        // Send invitations to backend
+        document.getElementById('sendInvitationsBtn').addEventListener('click', function() {
+            if (membersToInvite.length === 0) {
+                alert('Please add at least one contact to invite');
+                return;
+            }
+
+            const payload = {
+                method: inviteMethod, // 'email' or 'sms'
+                contacts: membersToInvite, // array of strings (emails or phone numbers)
+                chama_id: selectedChama.id // which chama we’re inviting into
+            };
+
+            fetch('/chama-admin/chamas/invite', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error('Invite request failed');
+                    return res.json();
+                })
+                .then(data => {
+                    alert(`Successfully queued ${data.invited_count} invitations via ${inviteMethod.toUpperCase()}`);
+                    membersToInvite = [];
+                    updateInviteMembers();
+                    addActivityLogEntry(`Invited ${data.invited_count} via ${inviteMethod}`);
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Error sending invitations.');
+                });
+        });
+
+
+        // Initialize the Delete Chama button
+        document.getElementById('deleteChamaBtn').addEventListener('click', function() {
+            if (!selectedChama) return;
+
+            if (confirm(`Are you sure you want to delete "${selectedChama.name}"?`)) {
+                // Remove from data
+                const index = chamas.findIndex(chama => chama.id === selectedChama.id);
+                if (index !== -1) {
+                    chamas.splice(index, 1);
+                }
+
+                // Update UI
+                document.getElementById('chamaManagementSection').style.display = 'none';
+                document.getElementById('chamaGrid').style.display = 'grid';
+                populateChamaGrid();
+                updateStats();
+
+                selectedChama = null;
+            }
+        });
+
+        document.getElementById('chamaDetailsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!selectedChama) return;
+
+            // Gather form values
+            const payload = {
+                name: document.getElementById('detailsChamaName').value.trim(),
+                contribution_amount: parseFloat(
+                    document.getElementById('detailsContribution').value.replace(/,/g, '')
+                ),
+                contribution_frequency: document.getElementById('detailsFrequency').value,
+                rules: document.getElementById('detailsRules').value.trim()
+            };
+            if (!payload.name || isNaN(payload.contribution_amount) || !payload.contribution_frequency) {
+                alert('Please fill all required fields');
+                return;
+            }
+
+            // Send update request
+            fetch(`/chama-admin/chamas/update/${selectedChama.id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // If you use CSRF tokens, send it here:
+                        // 'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(resp => {
+                    if (!resp.ok) throw new Error('Update failed');
+                    return resp.json();
+                })
+                .then(data => {
+                    // Update local state & UI
+                    selectedChama.name = data.name;
+                    selectedChama.contribution = new Intl.NumberFormat('en-US').format(data.contribution_amount);
+                    selectedChama.frequency = data.contribution_frequency;
+                    selectedChama.rules = data.rules;
+
+                    document.getElementById('selectedChamaName').textContent = data.name;
+                    // update stats or other places if needed...
+                    alert('Chama details updated successfully');
+                    addActivityLogEntry('Chama details updated');
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('There was a problem updating chama details.');
+                });
+        });
+
+        // Handle the back button
+        window.addEventListener('popstate', function() {
+            if (document.getElementById('chamaManagementSection').style.display === 'block') {
+                document.getElementById('chamaManagementSection').style.display = 'none';
+                document.getElementById('chamaGrid').style.display = 'grid';
+                selectedChama = null;
+            }
+        });
+
+        // Handle dark mode toggle (if needed)
+        if (document.getElementById('darkModeToggle')) {
+            document.getElementById('darkModeToggle').addEventListener('click', function() {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+            });
+
+            // Check for saved dark mode preference
+            if (localStorage.getItem('darkMode') === 'true' ||
+                (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches &&
+                    localStorage.getItem('darkMode') !== 'false')) {
+                document.documentElement.classList.add('dark');
+            }
+        }
+    });
+</script>
+
+{% endblock %}

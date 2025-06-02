@@ -1,0 +1,548 @@
+{% extends 'dashboard_chama_admin/layout.html' %} {% block title %}ChamaSmart - Admin Dashboard{% endblock %} {% block content %}
+<!-- Date & Summary Card -->
+<div class="px-4 pt-6">
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg p-6 mb-6 text-white">
+        <div class="flex flex-wrap items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold">ChamaSmart Dashboard</h2>
+                <p class="mt-2 opacity-90">Tuesday, April 22, 2025</p>
+            </div>
+            <div class="mt-4 md:mt-0">
+                <div class="flex items-center space-x-2">
+                    <div class="flex items-center bg-white bg-opacity-20 rounded-lg px-3 py-2">
+                        <i class="fas fa-wallet mr-2"></i>
+                        <div>
+                            <p class="text-sm opacity-80">Treasury Balance</p>
+                            <p class="font-bold">KES 1,245,800</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center bg-white bg-opacity-20 rounded-lg px-3 py-2">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        <div>
+                            <p class="text-sm opacity-80">Growth Rate</p>
+                            <p class="font-bold">+18.2%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Stat Cards -->
+<div class="px-4 py-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm hover:shadow-md transition">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 dark:text-gray-400 text-sm">Total Contributions</p>
+                <p class="text-2xl font-bold mt-2">KES 245,800</p>
+            </div>
+            <div class="bg-purple-100 dark:bg-purple-700 p-3 rounded-full">
+                <i class="fas fa-coins text-purple-600 dark:text-purple-200 fa-lg"></i>
+            </div>
+        </div>
+        <div class="mt-4 text-green-500 dark:text-green-400 text-sm flex items-center">
+            <i class="fas fa-arrow-up mr-1"></i>12% vs last month
+        </div>
+        <div class="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+            <div class="bg-purple-600 h-1.5 rounded-full" style="width: 75%"></div>
+        </div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm transition hover:shadow-md">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 dark:text-gray-400 text-sm">Active Loans</p>
+                <p class="text-2xl font-bold mt-2">KES 450,000</p>
+            </div>
+            <div class="bg-red-100 dark:bg-red-700 p-3 rounded-full">
+                <i class="fas fa-hand-holding-usd text-red-600 dark:text-red-200 fa-lg"></i>
+            </div>
+        </div>
+        <div class="mt-4 text-yellow-500 dark:text-yellow-400 text-sm flex items-center">
+            <i class="fas fa-arrow-down mr-1"></i>8% vs last month
+        </div>
+        <div class="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+            <div class="bg-red-600 h-1.5 rounded-full" style="width: 65%"></div>
+        </div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm transition hover:shadow-md">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 dark:text-gray-400 text-sm">New Members</p>
+                <p class="text-2xl font-bold mt-2">15</p>
+            </div>
+            <div class="bg-green-100 dark:bg-green-700 p-3 rounded-full">
+                <i class="fas fa-user-plus text-green-600 dark:text-green-200 fa-lg"></i>
+            </div>
+        </div>
+        <div class="mt-4 text-green-500 dark:text-green-400 text-sm flex items-center">
+            <i class="fas fa-arrow-up mr-1"></i>5% vs last week
+        </div>
+        <div class="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+            <div class="bg-green-600 h-1.5 rounded-full" style="width: 45%"></div>
+        </div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm transition hover:shadow-md">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 dark:text-gray-400 text-sm">Pending Approvals</p>
+                <p class="text-2xl font-bold mt-2">8</p>
+            </div>
+            <div class="bg-yellow-100 dark:bg-yellow-700 p-3 rounded-full">
+                <i class="fas fa-clock text-yellow-600 dark:text-yellow-200 fa-lg"></i>
+            </div>
+        </div>
+        <div class="mt-4 text-gray-500 dark:text-gray-400 text-sm">Need review</div>
+        <div class="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+            <div class="bg-yellow-500 h-1.5 rounded-full" style="width: 30%"></div>
+        </div>
+    </div>
+</div>
+<!-- Quick Actions/Links -->
+<div class="px-4 py-2">
+    <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">Quick Links</h3>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <a href="#" class="flex flex-col items-center justify-center bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm hover:shadow-md transition-all transform hover:-translate-y-1">
+            <div class="bg-teal-100 dark:bg-teal-700 p-3 rounded-full">
+                <i class="fas fa-people-group text-teal-600 dark:text-teal-200"></i>
+            </div>
+            <span class="mt-2 text-sm font-medium">Create Chama</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm hover:shadow-md transition-all transform hover:-translate-y-1">
+            <div class="bg-pink-100 dark:bg-pink-700 p-3 rounded-full">
+                <i class="fas fa-user-plus text-pink-600 dark:text-pink-200"></i>
+            </div>
+            <span class="mt-2 text-sm font-medium">Invite Member</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm hover:shadow-md transition-all transform hover:-translate-y-1">
+            <div class="bg-green-100 dark:bg-green-700 p-3 rounded-full">
+                <i class="fas fa-money-bill-wave text-green-600 dark:text-green-200"></i>
+            </div>
+            <span class="mt-2 text-sm font-medium">Record Payment</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm hover:shadow-md transition-all transform hover:-translate-y-1">
+            <div class="bg-red-100 dark:bg-red-700 p-3 rounded-full">
+                <i class="fas fa-hand-holding-usd text-red-600 dark:text-red-200"></i>
+            </div>
+            <span class="mt-2 text-sm font-medium">Loan Request</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm hover:shadow-md transition-all transform hover:-translate-y-1">
+            <div class="bg-purple-100 dark:bg-purple-700 p-3 rounded-full">
+                <i class="fas fa-bullhorn text-purple-600 dark:text-purple-200"></i>
+            </div>
+            <span class="mt-2 text-sm font-medium">Announcement</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm hover:shadow-md transition-all transform hover:-translate-y-1">
+            <div class="bg-blue-100 dark:bg-blue-700 p-3 rounded-full">
+                <i class="fas fa-calendar-alt text-blue-600 dark:text-blue-200"></i>
+            </div>
+            <span class="mt-2 text-sm font-medium">Schedule Meeting</span>
+        </a>
+    </div>
+</div>
+<!-- Contribution & Expense Trends -->
+<div class="px-4 py-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold text-gray-800 dark:text-gray-200">Contribution Trends</h3>
+            <a href="#" class="text-indigo-600 dark:text-indigo-400 text-sm hover:underline">View details</a>
+        </div>
+        <div class="h-64">
+            <canvas id="contributionChart"></canvas>
+        </div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold text-gray-800 dark:text-gray-200">Expense Breakdown</h3>
+            <a href="#" class="text-indigo-600 dark:text-indigo-400 text-sm hover:underline">View details</a>
+        </div>
+        <div class="h-64">
+            <canvas id="expenseChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Members & Loan Summary -->
+<div class="px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Member attendance -->
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold text-gray-800 dark:text-gray-200">Member Attendance</h3>
+            <a href="#" class="text-indigo-600 dark:text-indigo-400 text-sm hover:underline">View all</a>
+        </div>
+        <div class="h-64">
+            <canvas id="attendanceChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Loan Status -->
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold text-gray-800 dark:text-gray-200">Loan Status</h3>
+            <div>
+                <select class="text-xs bg-gray-100 dark:bg-gray-800 border-0 rounded p-1">
+                <option>This Month</option>
+                <option>Last 3 Months</option>
+                <option>This Year</option>
+            </select>
+            </div>
+        </div>
+        <div class="space-y-4">
+            <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <div class="flex justify-between mb-1">
+                    <span class="text-sm font-medium">Active Loans</span>
+                    <span class="text-sm font-medium">12 Loans</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div class="bg-blue-600 h-2 rounded-full" style="width: 65%"></div>
+                </div>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <div class="flex justify-between mb-1">
+                    <span class="text-sm font-medium">Pending Approval</span>
+                    <span class="text-sm font-medium">3 Loans</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div class="bg-yellow-500 h-2 rounded-full" style="width: 15%"></div>
+                </div>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <div class="flex justify-between mb-1">
+                    <span class="text-sm font-medium">Overdue</span>
+                    <span class="text-sm font-medium">2 Loans</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div class="bg-red-500 h-2 rounded-full" style="width: 10%"></div>
+                </div>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <div class="flex justify-between mb-1">
+                    <span class="text-sm font-medium">Fully Paid</span>
+                    <span class="text-sm font-medium">8 Loans</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 40%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Members -->
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold text-gray-800 dark:text-gray-200">Top Contributors</h3>
+            <a href="#" class="text-indigo-600 dark:text-indigo-400 text-sm hover:underline">See all</a>
+        </div>
+        <div class="space-y-4">
+            <div class="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
+                <img src="https://i.pravatar.cc/150?img=1" class="h-10 w-10 rounded-full mr-3">
+                <div class="flex-1">
+                    <p class="text-sm font-medium">Jane Njeri</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">KES 35,000 contributed</p>
+                </div>
+                <div class="flex items-center text-green-500 text-sm">
+                    <i class="fas fa-medal mr-1"></i> 1st
+                </div>
+            </div>
+            <div class="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
+                <img src="https://i.pravatar.cc/150?img=2" class="h-10 w-10 rounded-full mr-3">
+                <div class="flex-1">
+                    <p class="text-sm font-medium">John Kamau</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">KES 28,500 contributed</p>
+                </div>
+                <div class="flex items-center text-gray-500 text-sm">
+                    <i class="fas fa-medal mr-1"></i> 2nd
+                </div>
+            </div>
+            <div class="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
+                <img src="https://i.pravatar.cc/150?img=3" class="h-10 w-10 rounded-full mr-3">
+                <div class="flex-1">
+                    <p class="text-sm font-medium">Mary Wanjiku</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">KES 25,000 contributed</p>
+                </div>
+                <div class="flex items-center text-yellow-500 text-sm">
+                    <i class="fas fa-medal mr-1"></i> 3rd
+                </div>
+            </div>
+            <div class="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
+                <img src="https://i.pravatar.cc/150?img=4" class="h-10 w-10 rounded-full mr-3">
+                <div class="flex-1">
+                    <p class="text-sm font-medium">Peter Karanja</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">KES 22,000 contributed</p>
+                </div>
+                <div class="flex items-center text-gray-500 text-sm">
+                    <i class="fas fa-medal mr-1"></i> 4th
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities & Communications -->
+<div class="px-4 py-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm">
+        <h3 class="font-semibold mb-4">Recent Contributions</h3>
+        <div class="space-y-4" x-data="{ items: [
+        {name:'John Mwangi', amount:'KES 1,500', status:'Approved', time:'2h ago', avatar:'https://i.pravatar.cc/150?img=5'},
+        {name:'Jane Wambui', amount:'KES 2,500', status:'Approved', time:'3h ago', avatar:'https://i.pravatar.cc/150?img=6'},
+        {name:'Patrick Njoroge', amount:'KES 1,000', status:'Approved', time:'5h ago', avatar:'https://i.pravatar.cc/150?img=7'},
+        {name:'Lucy Wairimu', amount:'KES 3,000', status:'Pending', time:'8h ago', avatar:'https://i.pravatar.cc/150?img=8'},
+        {name:'Michael Njau', amount:'KES 2,000', status:'Approved', time:'1d ago', avatar:'https://i.pravatar.cc/150?img=9'}
+    ]}">
+            <template x-for="item in items" :key="item.name">
+            <div class="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
+                <div class="flex items-center space-x-3">
+                    <img :src="item.avatar" class="h-10 w-10 rounded-full">
+                    <div>
+                        <p class="text-sm font-medium" x-text="item.name"></p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400" x-text="`${item.amount} • ${item.time}`"></p>
+                    </div>
+                </div>
+                <span 
+                    class="text-sm px-2 py-1 rounded-full" 
+                    :class="item.status === 'Approved' ? 'bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-300'"
+                    x-text="item.status"></span>
+            </div>
+        </template>
+        </div>
+        <div class="mt-6 text-center">
+            <a href="#" class="text-indigo-600 dark:text-indigo-400 text-sm hover:underline">View all activity</a>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold">Communications</h3>
+            <button class="bg-indigo-100 dark:bg-indigo-700 text-indigo-600 dark:text-indigo-200 px-3 py-1 rounded-lg text-sm flex items-center">
+            <i class="fas fa-plus mr-1"></i> New Message
+        </button>
+        </div>
+        <ul class="space-y-4">
+            <li class="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="font-medium text-sm">New feature released</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">4h ago</span>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Chama payouts are now instant. Members can withdraw funds to their M-Pesa accounts instantly.</p>
+            </li>
+            <li class="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="font-medium text-sm">Member meeting reminder</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">1d ago</span>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Reminder about our monthly meeting this Friday at 6pm. Agenda includes loan review and investment proposals.</p>
+            </li>
+            <li class="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="font-medium text-sm">Loan application deadline</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">2d ago</span>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">The deadline for loan applications for this month is April 25th. Please submit your applications before then.</p>
+            </li>
+            <li class="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="font-medium text-sm">System maintenance</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">3d ago</span>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">ChamaSmart will be undergoing scheduled maintenance on April 24th from 2AM to 4AM. Services will be unavailable during this time.</p>
+            </li>
+        </ul>
+        <div class="mt-6 text-center">
+            <a href="#" class="text-indigo-600 dark:text-indigo-400 text-sm hover:underline">View all announcements</a>
+        </div>
+    </div>
+</div>
+
+<!-- Upcoming Events -->
+<div class="px-4 py-6">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold text-gray-800 dark:text-gray-200">Upcoming Events</h3>
+            <button class="bg-indigo-100 dark:bg-indigo-700 text-indigo-600 dark:text-indigo-200 px-3 py-1 rounded-lg text-sm flex items-center">
+            <i class="fas fa-plus mr-1"></i> Add Event
+        </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <div class="bg-indigo-600 p-3 text-white">
+                    <p class="text-xs">Friday</p>
+                    <p class="text-xl font-bold">Apr 25</p>
+                </div>
+                <div class="p-4">
+                    <p class="font-medium text-sm">Monthly Members Meeting</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><i class="fas fa-clock mr-1"></i> 6:00 PM - 8:00 PM</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><i class="fas fa-map-marker-alt mr-1"></i> Virtual (Zoom)</p>
+                    <div class="flex items-center mt-3">
+                        <div class="flex -space-x-2">
+                            <img src="https://i.pravatar.cc/150?img=1" class="h-6 w-6 rounded-full border border-white dark:border-gray-800">
+                            <img src="https://i.pravatar.cc/150?img=2" class="h-6 w-6 rounded-full border border-white dark:border-gray-800">
+                            <img src="https://i.pravatar.cc/150?img=3" class="h-6 w-6 rounded-full border border-white dark:border-gray-800">
+                        </div>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">+15 attending</span>
+                    </div>
+                </div>
+            </div>
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <div class="bg-indigo-600 p-3 text-white">
+                    <p class="text-xs">Friday</p>
+                    <p class="text-xl font-bold">Apr 25</p>
+                </div>
+                <div class="p-4">
+                    <p class="font-medium text-sm">Monthly Members Meeting</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><i class="fas fa-clock mr-1"></i> 6:00 PM - 8:00 PM</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><i class="fas fa-map-marker-alt mr-1"></i> Virtual (Zoom)</p>
+                    <div class="flex items-center mt-3">
+                        <div class="flex -space-x-2">
+                            <img src="https://i.pravatar.cc/150?img=1" class="h-6 w-6 rounded-full border border-white dark:border-gray-800">
+                            <img src="https://i.pravatar.cc/150?img=2" class="h-6 w-6 rounded-full border border-white dark:border-gray-800">
+                            <img src="https://i.pravatar.cc/150?img=3" class="h-6 w-6 rounded-full border border-white dark:border-gray-800">
+                        </div>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">+15 attending</span>
+                    </div>
+                </div>
+            </div>
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <div class="bg-green-600 p-3 text-white">
+                    <p class="text-xs">Monday</p>
+                    <p class="text-xl font-bold">Apr 28</p>
+                </div>
+                <div class="p-4">
+                    <p class="font-medium text-sm">Loan Committee Review</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><i class="fas fa-clock mr-1"></i> 5:30 PM - 6:30 PM</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><i class="fas fa-map-marker-alt mr-1"></i> Office Boardroom</p>
+                    <div class="flex items-center mt-3">
+                        <div class="flex -space-x-2">
+                            <img src="https://i.pravatar.cc/150?img=4" class="h-6 w-6 rounded-full border border-white dark:border-gray-800">
+                            <img src="https://i.pravatar.cc/150?img=5" class="h-6 w-6 rounded-full border border-white dark:border-gray-800">
+                            <img src="https://i.pravatar.cc/150?img=6" class="h-6 w-6 rounded-full border border-white dark:border-gray-800">
+                        </div>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">+5 attending</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="mt-6 text-center">
+            <a href="#" class="text-indigo-600 dark:text-indigo-400 text-sm hover:underline">View full calendar</a>
+        </div>
+    </div>
+</div>{% endblock %} {% block extra_scripts %}
+<!-- JavaScript for Charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize Alpine.js
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('sidebarData', () => ({
+            sidebarOpen: false,
+            toggleSidebar() {
+                this.sidebarOpen = !this.sidebarOpen;
+            }
+        }));
+    });
+
+    // Dark mode toggle
+    document.addEventListener('DOMContentLoaded', function() {
+        const darkMode = localStorage.getItem('darkMode') === 'true';
+        if (darkMode) {
+            document.documentElement.classList.add('dark');
+        }
+
+        window.dark = darkMode;
+        window.profileDropdownOpen = false;
+
+        // Initialize charts
+        initCharts();
+    });
+
+    function initCharts() {
+        // Contribution chart
+        const contributionCtx = document.getElementById('contributionChart').getContext('2d');
+        new Chart(contributionCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Contributions (KES)',
+                    data: [150000, 180000, 170000, 190000, 210000, 245800],
+                    borderColor: '#6366F1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Expense chart
+        const expenseCtx = document.getElementById('expenseChart').getContext('2d');
+        new Chart(expenseCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Loans', 'Admin', 'Events', 'Investments', 'Other'],
+                datasets: [{
+                    data: [45, 20, 15, 15, 5],
+                    backgroundColor: [
+                        '#6366F1',
+                        '#F59E0B',
+                        '#10B981',
+                        '#8B5CF6',
+                        '#EC4899'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Attendance chart
+        const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+        new Chart(attendanceCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Attendance Rate (%)',
+                    data: [75, 82, 78, 85, 90, 88],
+                    backgroundColor: '#8B5CF6'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+</script>{% endblock %}

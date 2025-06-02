@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{ 
+    // dark‐mode loaded from localStorage, with persistence
+    dark: JSON.parse(localStorage.getItem('dark') || 'false'),
+    // mobile menu & profile dropdown
+    mobileMenuOpen: false,
+    profileDropdownOpen: false,
+    // which sidebar link should be highlighted?
+    activeSidebarItem: '{{ request.endpoint.split('.')[-1] }}'
+  }" x-init="
+    // whenever `dark` changes, write it back
+    $watch('dark', val => localStorage.setItem('dark', JSON.stringify(val)))
+  " :class="{ 'dark': dark }" class="scroll-smooth min-h-screen bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChamaSmart – {% block title %}Dashboard{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {}
+            }
+        }
+    </script>
+    <style>
+        /* hide scrollbar but allow scrolling */
+        
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+        
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+            /* Chrome, Safari, Opera */
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+</head>
+{% include 'notifications/flash_messages.html' %}
+
+<body class="bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 min-h-screen">
+    <!-- Mobile Menu Overlay -->
+    <div x-show="mobileMenuOpen" @click="mobileMenuOpen = false" class="md:hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-40 transition-opacity" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+    </div>
+
+    <!-- Mobile Sidebar -->
+    <div x-show="mobileMenuOpen" class="md:hidden fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-900 z-50 shadow-xl transform" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="transform -translate-x-full" x-transition:enter-end="transform translate-x-0"
+        x-transition:leave="transition ease-in duration-300" x-transition:leave-start="transform translate-x-0" x-transition:leave-end="transform -translate-x-full">
+
+        <div class="flex items-center justify-between h-12 bg-primary-600 dark:bg-primary-700 px-4">
+            <a href="{{ url_for('chama_admin.dashboard') }}" class="flex items-center space-x-2 group">
+                <!-- Animated SVG Logo (smaller) -->
+                <svg class="w-7 h-7 group-hover:rotate-[30deg] transition-transform duration-500" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="45" fill="url(#gradient)" stroke-width="4"/>
+                    <path d="M35 55L50 35L65 55" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M35 65L50 45L65 65" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#6366F1"/>
+                            <stop offset="100%" stop-color="#8B5CF6"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <!-- Text Logo (smaller font) -->
+                <span class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent group-hover:bg-gradient-to-l transition-all duration-500">
+                    Chama<span class="font-light">Smart</span>
+                </span>
+            </a>
+            <button @click="mobileMenuOpen = false" class="text-gray-800 dark:text-gray-100 hover:text-red-600 dark:hover:text-red-400 text-base">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+
+        <!-- Nav -->
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto no-scrollbar">
+            <!-- Dashboard -->
+            <a href="{{ url_for('chama_admin.dashboard') }}" @click="activeSidebarItem='dashboard'" :class="activeSidebarItem==='dashboard'
+            ? 'bg-indigo-50 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'" class="flex items-center space-x-3 p-3 rounded-lg transition-all">
+                <i class="fas fa-home text-indigo-500"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <!-- Manage Chamas -->
+            <a href="{{ url_for('chama_admin.manage_chamas') }}" @click="activeSidebarItem='manage_chamas'" :class="activeSidebarItem==='manage_chamas'
+            ? 'bg-orange-50 dark:bg-orange-800 text-orange-700 dark:text-orange-200'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'" class="flex items-center justify-between space-x-3 p-3 rounded-lg transition-all">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-layer-group text-orange-500"></i>
+                    <span>Manage Chamas</span>
+                </div>
+                <span class="bg-orange-100 dark:bg-orange-800 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full text-xs">
+            {{ current_user.chama_count or 5 }}
+          </span>
+            </a>
+
+            <!-- Members -->
+            <a href="{{ url_for('chama_admin.members') }}" @click="activeSidebarItem='members'" :class="activeSidebarItem==='members'
+            ? 'bg-blue-50 dark:bg-blue-800 text-blue-700 dark:text-blue-200'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'" class="flex items-center justify-between space-x-3 p-3 rounded-lg transition-all">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-users text-blue-500"></i>
+                    <span>Members</span>
+                </div>
+                <span class="bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full text-xs">
+            {{ current_user.member_count or 120 }}
+          </span>
+            </a>
+
+            <!-- Contributions -->
+            <a href="{{ url_for('chama_admin.contributions') }}" @click="activeSidebarItem='contributions'" :class="activeSidebarItem==='contributions'
+            ? 'bg-green-50 dark:bg-green-800 text-green-700 dark:text-green-200'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'" class="flex items-center justify-between space-x-3 p-3 rounded-lg transition-all">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-hand-holding-usd text-green-500"></i>
+                    <span>Contributions</span>
+                </div>
+                <span class="bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full text-xs">
+            +{{ current_user.contribution_growth }}%
+          </span>
+            </a>
+
+            <!-- Loans -->
+            <a href="{{ url_for('chama_admin.loans') }}" @click="activeSidebarItem='loans'" :class="activeSidebarItem==='loans'
+            ? 'bg-red-50 dark:bg-red-800 text-red-700 dark:text-red-200'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'" class="flex items-center justify-between space-x-3 p-3 rounded-lg transition-all">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-file-invoice-dollar text-red-500"></i>
+                    <span>Loans</span>
+                </div>
+                <span class="bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-full text-xs pulse-badge">
+            {{ current_user.pending_loans }}
+          </span>
+            </a>
+
+            <!-- Expenses -->
+            <a href="{{ url_for('chama_admin.expenses') }}" @click="activeSidebarItem='expenses'" :class="activeSidebarItem==='expenses'
+            ? 'bg-yellow-50 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-200'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'" class="flex items-center space-x-3 p-3 rounded-lg transition-all">
+                <i class="fas fa-receipt text-yellow-500"></i>
+                <span>Expenses</span>
+            </a>
+
+            <!-- Communications -->
+            <a href="{{ url_for('chama_admin.communications') }}" @click="activeSidebarItem='communications'" :class="activeSidebarItem==='communications'
+            ? 'bg-pink-50 dark:bg-pink-800 text-pink-700 dark:text-pink-200'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'" class="flex items-center space-x-3 p-3 rounded-lg transition-all">
+                <i class="fas fa-comments text-pink-500"></i>
+                <span>Communications</span>
+            </a>
+
+            <!-- Reports -->
+            <a href="{{ url_for('chama_admin.reports') }}" @click="activeSidebarItem='reports'" :class="activeSidebarItem==='reports'
+            ? 'bg-purple-50 dark:bg-purple-800 text-purple-700 dark:text-purple-200'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'" class="flex items-center space-x-3 p-3 rounded-lg transition-all">
+                <i class="fas fa-chart-pie text-purple-500"></i>
+                <span>Reports</span>
+            </a>
+
+            <!-- Settings -->
+            <a href="{{ url_for('chama_admin.settings') }}" @click="activeSidebarItem='settings'" :class="activeSidebarItem==='settings'
+            ? 'bg-cyan-50 dark:bg-cyan-800 text-cyan-700 dark:text-cyan-200'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'" class="flex items-center space-x-3 p-3 rounded-lg transition-all">
+                <i class="fas fa-cog text-cyan-500"></i>
+                <span>Settings</span>
+            </a>
+
+            <!-- System Section -->
+            <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                <p class="px-3 text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+                    System
+                </p>
+                <a href="{{ url_for('chama_admin.audit_logs') }}" @click="activeSidebarItem='audit_logs'" :class="activeSidebarItem==='audit_logs'
+              ? 'bg-indigo-50 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300'
+              : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'" class="flex items-center space-x-3 p-3 rounded-lg mt-2 transition-all">
+                    <i class="fas fa-shield-alt text-indigo-500"></i>
+                    <span>Audit Logs</span>
+                </a>
+                <a href="{{ url_for('chama_admin.help_support') }}" @click="activeSidebarItem='help_support'" :class="activeSidebarItem==='help_support'
+              ? 'bg-green-50 dark:bg-green-800 text-green-700 dark:text-green-200'
+              : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'" class="flex items-center space-x-3 p-3 rounded-lg transition-all">
+                    <i class="fas fa-question-circle text-green-500"></i>
+                    <span>Help &amp; Support</span>
+                </a>
+            </div>
+        </nav>
+
+
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center space-x-3">
+                <img src="https://i.pravatar.cc/40" alt="Profile" class="rounded-full h-10 w-10 object-cover">
+                <div>
+                    <p class="text-sm font-medium">Admin User</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">admin@chamasmart.com</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desktop Sidebar -->
+    <aside class="hidden md:flex flex-col w-64 fixed inset-y-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow z-10">
+        <!-- Logo -->
+        <div class="flex items-center justify-center h-16 bg-primary-600 dark:bg-primary-700">
+            <a href="{{ url_for('chama_admin.dashboard') }}" class="flex items-center space-x-2 group">
+                <!-- SVG Logo -->
+                <svg class="w-10 h-10 transition-transform duration-500 group-hover:rotate-[30deg]" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#6366F1"/>
+                  <stop offset="100%" stop-color="#8B5CF6"/>
+                </linearGradient>
+              </defs>
+              <circle cx="50" cy="50" r="45" fill="url(#logo-gradient)" stroke="white" stroke-width="4"/>
+              <path d="M35 55L50 35L65 55" stroke="white" stroke-width="4" stroke-linecap="round"/>
+              <path d="M35 65L50 45L65 65" stroke="white" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+                <span class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              Chama<span class="font-light">Smart</span>
+                </span>
+            </a>
+        </div>
+
+        <!-- Nav -->
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto no-scrollbar">
+            <!-- Dashboard -->
+            <a href="{{ url_for('chama_admin.dashboard') }}" @click="activeSidebarItem='dashboard'" :class="activeSidebarItem==='dashboard'
+              ? 'bg-indigo-50 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-700'" class="flex items-center space-x-3 p-3 rounded-lg transition-all">
+                <i class="fas fa-home text-indigo-500"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <!-- Manage Chamas -->
+            <a href="{{ url_for('chama_admin.manage_chamas') }}" @click="activeSidebarItem='manage_chamas'" :class="activeSidebarItem==='manage_chamas'
+              ? 'bg-indigo-50 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-700'" class="flex items-center justify-between space-x-3 p-3 rounded-lg transition-all">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-layer-group text-orange-500"></i>
+                    <span>Manage Chamas</span>
+                </div>
+                <span class="bg-orange-100 dark:bg-orange-800 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full text-xs">
+              {{ current_user.chama_count or 2 }}
+            </span>
+            </a>
+
+            <!-- Members -->
+            <a href="{{ url_for('chama_admin.members') }}" @click="activeSidebarItem='members'" :class="activeSidebarItem==='members'
+              ? 'bg-indigo-50 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-700'" class="flex items-center justify-between space-x-3 p-3 rounded-lg transition-all">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-users text-green-500"></i>
+                    <span>Members</span>
+                </div>
+                <span class="bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full text-xs">
+              {{ current_user.member_count or 120 }}
+            </span>
+            </a>
+
+            <!-- Contributions -->
+            <a href="{{ url_for('chama_admin.contributions') }}" @click="activeSidebarItem='contributions'" :class="activeSidebarItem==='contributions'
+              ? 'bg-indigo-50 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-700'" class="flex items-center justify-between space-x-3 p-3 rounded-lg transition-all">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-hand-holding-usd text-indigo-500"></i>
+                    <span>Contributions</span>
+                </div>
+                <span class="bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full text-xs">
+              +{{ current_user.contribution_growth }}%
+            </span>
+            </a>
+
+            <!-- Loans -->
+            <a href="{{ url_for('chama_admin.loans') }}" @click="activeSidebarItem='loans'" :class="activeSidebarItem==='loans'
+              ? 'bg-indigo-50 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-700'" class="flex items-center justify-between space-x-3 p-3 rounded-lg transition-all">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-file-invoice-dollar text-red-500"></i>
+                    <span>Loans</span>
+                </div>
+                <span class="bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-full text-xs">
+              {{ current_user.pending_loans or 0 }}
+            </span>
+            </a>
+
+            <!-- Expenses -->
+            <a href="{{ url_for('chama_admin.expenses') }}" @click="activeSidebarItem='expenses'" :class="activeSidebarItem==='expenses'
+              ? 'bg-indigo-50 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-700'" class="flex items-center space-x-3 p-3 rounded-lg transition-all">
+                <i class="fas fa-receipt text-yellow-500"></i>
+                <span>Expenses</span>
+            </a>
+
+            <!-- Communications -->
+            <a href="{{ url_for('chama_admin.communications') }}" @click="activeSidebarItem='communications'" :class="activeSidebarItem==='communications'
+              ? 'bg-indigo-50 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-700'" class="flex items-center space-x-3 p-3 rounded-lg transition-all">
+                <i class="fas fa-comments text-blue-500"></i>
+                <span>Communications</span>
+            </a>
+
+            <!-- Reports -->
+            <a href="{{ url_for('chama_admin.reports') }}" @click="activeSidebarItem='reports'" :class="activeSidebarItem==='reports'
+              ? 'bg-indigo-50 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-700'" class="flex items-center space-x-3 p-3 rounded-lg transition-all">
+                <i class="fas fa-chart-pie text-pink-500"></i>
+                <span>Reports</span>
+            </a>
+
+            <!-- Settings -->
+            <a href="{{ url_for('chama_admin.settings') }}" @click="activeSidebarItem='settings'" :class="activeSidebarItem==='settings'
+              ? 'bg-indigo-50 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-700'" class="flex items-center space-x-3 p-3 rounded-lg transition-all">
+                <i class="fas fa-cog text-gray-500"></i>
+                <span>Settings</span>
+            </a>
+
+            <!-- System -->
+            <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                <p class="px-3 text-xs font-medium uppercase text-gray-500 dark:text-gray-400">System</p>
+                <a href="{{ url_for('chama_admin.audit_logs') }}" @click="activeSidebarItem='audit_logs'" :class="activeSidebarItem==='audit_logs'
+                ? 'bg-indigo-50 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-700'" class="flex items-center space-x-3 p-3 rounded-lg mt-2 transition-all">
+                    <i class="fas fa-shield-alt text-indigo-500"></i>
+                    <span>Audit Logs</span>
+                </a>
+                <a href="{{ url_for('chama_admin.help_support') }}" @click="activeSidebarItem='help_support'" :class="activeSidebarItem==='help_support'
+                ? 'bg-indigo-50 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-700'" class="flex items-center space-x-3 p-3 rounded-lg transition-all">
+                    <i class="fas fa-question-circle text-green-500"></i>
+                    <span>Help & Support</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- Profile Footer -->
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center space-x-3">
+                <img src="https://i.pravatar.cc/40" alt="Profile" class="rounded-full h-10 w-10 object-cover">
+                <div>
+                    <p class="text-sm font-medium">{{ current_user.full_name }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ current_user.email }}</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="md:hidden fixed bottom-0 w-full bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-md z-30">
+        <div class="flex justify-around items-center h-16">
+            <a href="#" @click="activeSidebarItem = 'dashboard'" class="text-center px-2" :class="{'text-primary-600 dark:text-primary-400': activeSidebarItem === 'dashboard', 'text-gray-500 dark:text-gray-400': activeSidebarItem !== 'dashboard'}">
+                <i class="fas fa-home text-lg text-indigo-500"></i>
+                <p class="text-xs mt-1">Home</p>
+            </a>
+            <a href="#" @click="activeSidebarItem = 'members'" class="text-center px-2" :class="{'text-primary-600 dark:text-primary-400': activeSidebarItem === 'members', 'text-gray-500 dark:text-gray-400': activeSidebarItem !== 'members'}">
+                <i class="fas fa-users text-lg text-green-500"></i>
+                <p class="text-xs mt-1">Members</p>
+            </a>
+            <a href="#" @click="activeSidebarItem = 'contributions'" class="text-center px-2" :class="{'text-primary-600 dark:text-primary-400': activeSidebarItem === 'contributions', 'text-gray-500 dark:text-gray-400': activeSidebarItem !== 'contributions'}">
+                <i class="fas fa-hand-holding-usd text-lg text-indigo-500"></i>
+                <p class="text-xs mt-1">Money</p>
+            </a>
+            <a href="#" @click="activeSidebarItem = 'loans'" class="text-center px-2" :class="{'text-primary-600 dark:text-primary-400': activeSidebarItem === 'loans', 'text-gray-500 dark:text-gray-400': activeSidebarItem !== 'loans'}">
+                <i class="fas fa-file-invoice-dollar text-lg text-red-500"></i>
+                <p class="text-xs mt-1">Loans</p>
+            </a>
+            <a href="#" @click="mobileMenuOpen = true" class="text-center px-2 text-gray-500 dark:text-gray-400">
+                <i class="fas fa-ellipsis-h text-lg"></i>
+                <p class="text-xs mt-1">More</p>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="md:ml-64 pb-16 md:pb-0">
+        <!-- Header -->
+        <header class="bg-white dark:bg-gray-900 shadow-sm">
+            <div class="flex items-center justify-between px-4 py-4">
+                <div>
+                    <h1 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Welcome back, Admin</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Last login: 2 hours ago</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- Theme Toggle -->
+                    <button @click="dark = !dark" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" x-tooltip="dark ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+                        <i class="fas fa-moon text-gray-600 dark:text-yellow-400" x-show="!dark"></i>
+                        <i class="fas fa-sun text-yellow-500" x-show="dark"></i>
+                    </button>
+
+                    <!-- Notifications Dropdown -->
+                    <div class="relative" x-data="{ notificationsOpen: false }">
+                        <button @click="notificationsOpen = !notificationsOpen" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 relative transition-colors">
+                            <i class="fas fa-bell text-gray-600 dark:text-gray-400"></i>
+                            <span class="absolute top-0 right-0 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">3</span>
+                        </button>
+
+                        <div x-show="notificationsOpen" @click.away="notificationsOpen = false" class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-30" x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
+                            <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                <h3 class="font-semibold text-gray-800 dark:text-gray-200">Notifications</h3>
+                            </div>
+                            <div class="max-h-96 overflow-y-auto">
+                                <a href="#" class="flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                                            <i class="fas fa-info-circle text-blue-500 dark:text-blue-400"></i>
+                                        </div>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm text-gray-800 dark:text-gray-200">New contribution received</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">2 minutes ago</p>
+                                    </div>
+                                </a>
+                                <!-- More notification items -->
+                            </div>
+                            <div class="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
+                                <a href="#" class="text-sm text-primary-600 dark:text-primary-400 hover:underline">View all notifications</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Dropdown -->
+                    <div class="relative" x-data="{ profileDropdownOpen: false }">
+                        <button @click="profileDropdownOpen = !profileDropdownOpen" class="flex items-center space-x-2 group">
+                            <img src="https://i.pravatar.cc/40" alt="Profile" 
+                                 class="w-8 h-8 rounded-full border-2 border-transparent group-hover:border-primary-500 transition-colors">
+                            <i class="fas fa-chevron-down text-gray-600 dark:text-gray-400 text-sm"></i>
+                        </button>
+
+                        <div x-show="profileDropdownOpen" @click.away="profileDropdownOpen = false" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-30" x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
+                            <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                <p class="text-sm font-medium dark:text-gray-200">Admin User</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">admin@chamasmart.com</p>
+                            </div>
+                            <div class="py-2">
+                                <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <i class="fas fa-user-circle mr-2 text-gray-500 dark:text-gray-400"></i> Profile
+                                </a>
+                                <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <i class="fas fa-cog mr-2 text-gray-500 dark:text-gray-400"></i> Settings
+                                </a>
+                            </div>
+                            <div class="border-t border-gray-200 dark:border-gray-700"></div>
+                            <a href="{{ url_for('auth.logout') }}" class="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <section class="p-4">
+            {% block content %}{% endblock %}
+        </section>
+        <!-- Footer -->
+        <footer class="px-4 py-6">
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="mb-4 md:mb-0">
+                        <p class="text-sm text-gray-500 dark:text-gray-400">© 2025 ChamaSmart. All rights reserved.</p>
+                    </div>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                            <i class="fab fa-whatsapp"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="mt-4 flex flex-wrap justify-center md:justify-start gap-4 text-sm text-gray-500 dark:text-gray-400">
+                    <a href="#" class="hover:text-indigo-600 dark:hover:text-indigo-400">Privacy Policy</a>
+                    <a href="#" class="hover:text-indigo-600 dark:hover:text-indigo-400">Terms of Service</a>
+                    <a href="#" class="hover:text-indigo-600 dark:hover:text-indigo-400">FAQ</a>
+                    <a href="#" class="hover:text-indigo-600 dark:hover:text-indigo-400">Contact Us</a>
+                    <a href="#" class="hover:text-indigo-600 dark:hover:text-indigo-400">Help Center</a>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    {% block extra_scripts %}{% endblock %}
+
+</body>
+
+</html>

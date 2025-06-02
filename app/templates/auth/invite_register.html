@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invite Registration - ChamaSmart</title>
+    <script src="//unpkg.com/alpinejs" defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+        
+        .gradient-border {
+            border: 2px solid transparent;
+            background: linear-gradient(white, white), linear-gradient(45deg, #6366f1, #8b5cf6);
+            background-clip: padding-box, border-box;
+        }
+        
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
+        
+        @keyframes blob {
+            0%,
+            100% {
+                border-radius: 60% 40% 30% 70%/60% 30% 70% 40%;
+            }
+            50% {
+                border-radius: 30% 60% 70% 40%/50% 60% 30% 60%;
+            }
+        }
+        
+        .bg-mesh {
+            background-image: radial-gradient(#e0e7ff 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        .input-icon-wrapper {
+            position: relative;
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .input-with-icon {
+            padding-left: 40px !important;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6B7280;
+        }
+        /* Floating label styles */
+        
+        .floating-label {
+            position: relative;
+        }
+        
+        .floating-label input {
+            height: 56px;
+            padding-top: 20px;
+        }
+        
+        .floating-label label {
+            position: absolute;
+            left: 40px;
+            top: 8px;
+            font-size: 0.75rem;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        /* Custom scrollbar */
+        
+         ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+         ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+         ::-webkit-scrollbar-thumb {
+            background: #6366f1;
+            border-radius: 10px;
+        }
+        
+         ::-webkit-scrollbar-thumb:hover {
+            background: #4f46e5;
+        }
+        /* Animation for form appearance */
+        
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        
+        .animate-delay-100 {
+            animation-delay: 100ms;
+        }
+        
+        .animate-delay-200 {
+            animation-delay: 200ms;
+        }
+        
+        .animate-delay-300 {
+            animation-delay: 300ms;
+        }
+        /* Additional mobile responsiveness */
+        
+        @media (max-width: 640px) {
+            .floating-label input {
+                height: 50px;
+            }
+            .trust-badge {
+                font-size: 0.65rem;
+            }
+        }
+    </style>
+</head>
+{% include 'notifications/flash_messages.html' %}
+
+<body class="font-['Inter'] bg-gray-50 bg-mesh" x-data="{
+    fullName: '',
+    email: '',
+    phoneNumber: '',
+    password: '',
+    confirmPassword: '',
+    role: 'member', // Default role is member
+    showPassword: false,
+    showConfirmPassword: false,
+    error: null,
+    isLoading: false,
+    passwordStrength: 0,
+    step: 1,
+    totalSteps: 2,
+
+    checkPasswordStrength() {
+        const password = this.password;
+        let strength = 0;
+        
+        if (password.length >= 8) strength += 1;
+        if (/[A-Z]/.test(password)) strength += 1;
+        if (/[0-9]/.test(password)) strength += 1;
+        if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+        
+        this.passwordStrength = strength;
+    },
+
+    nextStep() {
+        if (this.step === 1) {
+            if (!this.fullName || !this.email || !this.phoneNumber) {
+                this.error = 'Please fill all personal information fields.';
+                return;
+            }
+            
+            // Validate email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(this.email)) {
+                this.error = 'Please enter a valid email address.';
+                return;
+            }
+            
+            // Validate phone number
+            const phoneRegex = /^\+?[0-9]{10,15}$/;
+            if (!phoneRegex.test(this.phoneNumber)) {
+                this.error = 'Please enter a valid phone number.';
+                return;
+            }
+        }
+        
+        this.error = null;
+        this.step++;
+    },
+
+    prevStep() {
+        this.error = null;
+        this.step--;
+    },
+
+    async register() {
+        this.isLoading = true;
+        this.error = null;
+    
+        if (!this.password || !this.confirmPassword || this.password !== this.confirmPassword) {
+            this.error = 'Please check your password fields.';
+            this.isLoading = false;
+            return;
+        }
+    
+        if (this.passwordStrength < 3) {
+            this.error = 'Please use a stronger password.';
+            this.isLoading = false;
+            return;
+        }
+    
+        const payload = new URLSearchParams();
+        payload.append('fullName', this.fullName);
+        payload.append('email', this.email);
+        payload.append('phone', this.phoneNumber);
+        payload.append('password', this.password);
+        payload.append('confirmPassword', this.confirmPassword);
+        payload.append('acceptedTerms', 'on'); // Adjust if you want checkbox input
+    
+        try {
+            const res = await fetch(window.location.pathname + window.location.search, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: payload
+            });
+    
+            const html = await res.text();
+    
+            if (res.redirected) {
+                window.location.href = res.url;
+                return;
+            }
+    
+            // Optional: Show backend validation messages
+            document.open();
+            document.write(html);
+            document.close();
+        } catch (err) {
+            this.error = 'Something went wrong. Please try again.';
+            console.error(err);
+        } finally {
+            this.isLoading = false;
+        }
+    }
+    
+}" x-cloak>
+    <!-- Header -->
+    <main class="min-h-screen flex items-center justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-4xl w-full space-y-6 sm:space-y-8">
+            <!-- Animated Decorative Elements -->
+            <div class="relative hidden sm:block">
+                <div class="absolute -top-16 -left-16 w-32 h-32 bg-indigo-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+                <div class="absolute -top-16 left-8 w-32 h-32 bg-purple-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+                <div class="absolute -top-16 left-32 w-32 h-32 bg-pink-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+            </div>
+
+            <div class="text-center">
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900">
+                    <span class="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Join ChamaSmart</span>
+                </h2>
+                <p class="mt-2 text-sm text-gray-600">Accept the invitation and create your account</p>
+            </div>
+
+            <!-- Progress Bar for multi-step form -->
+            <div class="flex items-center justify-between max-w-xs mx-auto">
+                <div class="w-2/3 bg-gray-200 rounded-full h-2.5">
+                    <div class="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" :style="`width: ${(step/totalSteps)*100}%`"></div>
+                </div>
+                <span class="text-sm font-medium text-gray-700" x-text="`Step ${step} of ${totalSteps}`"></span>
+            </div>
+
+            <!-- Form Card -->
+            <div class="bg-white p-4 sm:p-8 rounded-2xl shadow-xl gradient-border animate-fade-in">
+                <template x-if="error">
+                    <div class="bg-red-100 text-red-700 px-4 py-3 rounded-lg relative text-sm mb-6 animate-fade-in">
+                        <span class="mr-2"><i class="fas fa-exclamation-circle"></i></span>
+                        <span x-text="error"></span>
+                    </div>
+                </template>
+
+                <form @submit.prevent="step === totalSteps ? register() : nextStep()">
+                    <!-- Step 1: Personal Information -->
+                    <div x-show="step === 1" class="animate-fade-in">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4 sm:mb-6">Personal Information</h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                            <div class="floating-label">
+                                <div class="input-icon-wrapper">
+                                    <span class="input-icon text-blue-500"><i class="fas fa-user"></i></span>
+                                    <input type="text" id="fullName" name="fullName" x-model="fullName" required class="input-with-icon block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <label for="fullName" class="block text-sm font-medium text-gray-700">Full Name</label>
+                                </div>
+                            </div>
+
+                            <div class="floating-label">
+                                <div class="input-icon-wrapper">
+                                    <span class="input-icon text-green-500"><i class="fas fa-envelope"></i></span>
+                                    <input type="email" id="email" name="email" x-model="email" required class="input-with-icon block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                                </div>
+                            </div>
+
+                            <div class="floating-label md:col-span-2">
+                                <div class="input-icon-wrapper">
+                                    <span class="input-icon text-purple-500"><i class="fas fa-phone"></i></span>
+                                    <input type="tel" id="phoneNumber" name="phoneNumber" x-model="phoneNumber" required placeholder="0799397003" class="input-with-icon block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <label for="phoneNumber" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center bg-blue-50 p-3 sm:p-4 rounded-lg mt-4 sm:mt-6">
+                            <span class="text-blue-600 mr-2 sm:mr-3"><i class="fas fa-info-circle text-lg sm:text-xl"></i></span>
+                            <span class="text-xs sm:text-sm text-gray-700">All fields marked with * are required</span>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Security Information -->
+                    <template x-if="step === 2">
+                        <div class="animate-fade-in">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4 sm:mb-6">Security Information</h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                            <div class="md:col-span-2">
+                                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                                <div class="input-icon-wrapper mt-1">
+                                    <span class="input-icon text-indigo-500"><i class="fas fa-lock"></i></span>
+                                    <input :type="showPassword ? 'text' : 'password'" id="password" name="password" x-model="password" @input="checkPasswordStrength" required class="input-with-icon block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <span @click="showPassword = !showPassword" class="password-toggle">
+                                        <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                    </span>
+                                </div>
+
+                                <!-- Password strength indicator -->
+                                <div class="flex mt-2 space-x-1">
+                                    <div class="h-1 flex-1 rounded-full" :class="passwordStrength >= 1 ? 'bg-red-500' : 'bg-gray-200'"></div>
+                                    <div class="h-1 flex-1 rounded-full" :class="passwordStrength >= 2 ? 'bg-yellow-500' : 'bg-gray-200'"></div>
+                                    <div class="h-1 flex-1 rounded-full" :class="passwordStrength >= 3 ? 'bg-blue-500' : 'bg-gray-200'"></div>
+                                    <div class="h-1 flex-1 rounded-full" :class="passwordStrength >= 4 ? 'bg-green-500' : 'bg-gray-200'"></div>
+                                </div>
+
+                                <p class="text-xs text-gray-500 mt-1">
+                                    <span :class="passwordStrength >= 1 ? 'text-green-600' : 'text-gray-500'"><i :class="passwordStrength >= 1 ? 'fas fa-check-circle' : 'far fa-circle'"></i> 8+ characters</span> •
+                                    <span :class="/[A-Z]/.test(password) ? 'text-green-600' : 'text-gray-500'"><i :class="/[A-Z]/.test(password) ? 'fas fa-check-circle' : 'far fa-circle'"></i> Uppercase</span> •
+                                    <span :class="/[0-9]/.test(password) ? 'text-green-600' : 'text-gray-500'"><i :class="/[0-9]/.test(password) ? 'fas fa-check-circle' : 'far fa-circle'"></i> Number</span> •
+                                    <span :class="/[^A-Za-z0-9]/.test(password) ? 'text-green-600' : 'text-gray-500'"><i :class="/[^A-Za-z0-9]/.test(password) ? 'fas fa-check-circle' : 'far fa-circle'"></i> Symbol</span>
+                                </p>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label for="confirmPassword" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+                                <div class="input-icon-wrapper mt-1">
+                                    <span class="input-icon text-indigo-500"><i class="fas fa-lock"></i></span>
+                                    <input :type="showConfirmPassword ? 'text' : 'password'" id="confirmPassword" name="confirmPassword" x-model="confirmPassword" required class="input-with-icon block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <span @click="showConfirmPassword = !showConfirmPassword" class="password-toggle">
+                                        <i :class="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                    </span>
+                                </div>
+                                <p class="text-xs mt-1" :class="confirmPassword && password === confirmPassword ? 'text-green-600' : 'text-red-600'" x-show="confirmPassword">
+                                    <i :class="password === confirmPassword ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+                                    <span x-text="password === confirmPassword ? 'Passwords match' : 'Passwords do not match'"></span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center bg-indigo-50 p-3 sm:p-4 rounded-lg mt-4 sm:mt-6">
+                            <span class="text-indigo-600 mr-2 sm:mr-3"><i class="fas fa-shield-alt text-lg sm:text-xl"></i></span>
+                            <span class="text-xs sm:text-sm text-gray-700">Your information is secure and encrypted with industry-standard protocols</span>
+                        </div>
+                    </div>
+                </template>
+                    <!-- Hidden field for role -->
+                    <input type="hidden" name="role" x-model="role">
+
+                    <!-- Navigation Buttons -->
+                    <div class="flex justify-between mt-6 sm:mt-8 space-x-2 sm:space-x-4">
+                        <button type="button" @click="prevStep" x-show="step > 1" class="flex items-center justify-center py-2 px-3 sm:px-4 border border-gray-300 rounded-lg shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300">
+                            <i class="fas fa-arrow-left mr-1 sm:mr-2"></i> Back
+                        </button>
+
+                        <div class="flex-1"></div>
+
+                        <button type="submit" class="flex items-center justify-center py-2 sm:py-3 px-4 sm:px-6 border border-transparent text-xs sm:text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all duration-300"
+                            :disabled="isLoading">
+                            <template x-if="isLoading">
+                                <svg class="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                </svg>
+                            </template>
+                    <span x-text="step < totalSteps ? 'Continue' : 'Complete Registration'"></span>
+                    <i class="fas" :class="step < totalSteps ? 'fa-arrow-right ml-1 sm:ml-2' : 'fa-user-check ml-1 sm:ml-2'"></i>
+                    </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="flex flex-col sm:flex-row flex-wrap justify-center items-center mt-4 text-center gap-y-2 sm:gap-x-8 sm:gap-y-4">
+                <p class="text-xs sm:text-sm text-gray-600">
+                    Already have an account?
+                    <a href="{{ url_for('auth.login') }}" class="text-indigo-600 hover:text-indigo-800 font-medium transition-all duration-300">
+                        <i class="fas fa-sign-in-alt mr-1"></i>Login
+                    </a>
+                </p>
+
+                <p class="text-xs sm:text-sm text-gray-600">
+                    Need help?
+                    <a href="#" class="text-indigo-600 hover:text-indigo-800 font-medium transition-all duration-300">
+                        <i class="fas fa-question-circle mr-1"></i>Contact Support
+                    </a>
+                </p>
+            </div>
+
+            <div class="mt-4 sm:mt-6 text-center">
+                <p class="text-xs text-gray-500">By registering, you agree to our <a href="#" class="text-indigo-600 hover:underline">Terms of Service</a> and <a href="#" class="text-indigo-600 hover:underline">Privacy Policy</a></p>
+            </div>
+
+            <!-- Trust badges -->
+            <div class="flex flex-wrap justify-center items-center gap-2 sm:gap-4 mt-4 sm:mt-6">
+                <div class="flex items-center bg-white p-2 rounded-lg shadow-sm trust-badge">
+                    <i class="fas fa-lock text-green-500 mr-1 sm:mr-2"></i>
+                    <span class="text-xs font-medium">Secure</span>
+                </div>
+                <div class="flex items-center bg-white p-2 rounded-lg shadow-sm trust-badge">
+                    <i class="fas fa-shield-alt text-blue-500 mr-1 sm:mr-2"></i>
+                    <span class="text-xs font-medium">Protected</span>
+                </div>
+                <div class="flex items-center bg-white p-2 rounded-lg shadow-sm trust-badge">
+                    <i class="fas fa-check-circle text-indigo-500 mr-1 sm:mr-2"></i>
+                    <span class="text-xs font-medium">Verified</span>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

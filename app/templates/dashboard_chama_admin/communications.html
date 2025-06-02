@@ -1,0 +1,1221 @@
+{% extends 'dashboard_chama_admin/layout.html' %} {% block title %}Communications{% endblock %} {% block content %}
+
+<div class="container mx-auto px-4 py-6" x-data="communicationManager()" x-init="init()">
+
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 sm:gap-0">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Group Communications</h2>
+        <div class="flex items-center space-x-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+            {# These could also be dynamic based on communication history filtering #}
+            <span>Total Sent: <span class="text-indigo-600 dark:text-indigo-400">1,234</span></span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-indigo-50 dark:bg-indigo-900/20 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center space-x-4">
+            <div class="flex-shrink-0">
+                <svg class="h-8 w-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+                <div class="text-sm text-indigo-700 dark:text-indigo-400 font-medium">Pending Messages</div>
+                <div class="text-2xl font-bold text-gray-800 dark:text-gray-200" x-text="stats.pending"></div>
+            </div>
+        </div>
+        <div class="bg-green-50 dark:bg-green-900/20 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center space-x-4">
+            <div class="flex-shrink-0">
+                <svg class="h-8 w-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+                <div class="text-sm text-green-700 dark:text-green-400 font-medium">Successful Deliveries</div>
+                <div class="text-2xl font-bold text-gray-800 dark:text-gray-200" x-text="stats.delivered"></div>
+            </div>
+        </div>
+        <div class="bg-purple-50 dark:bg-purple-900/20 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center space-x-4">
+            <div class="flex-shrink-0">
+                <svg class="h-8 w-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1m-.75-4L12 15l-3.25 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+                <div class="text-sm text-purple-700 dark:text-purple-400 font-medium">Templates Available</div>
+                <div class="text-2xl font-bold text-gray-800 dark:text-gray-200" x-text="templates.length"></div>
+            </div>
+        </div>
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center space-x-4">
+            <div class="flex-shrink-0">
+                <svg class="h-8 w-8 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+            <div>
+                <div class="text-sm text-yellow-700 dark:text-yellow-400 font-medium">Scheduled Messages</div>
+                <div class="text-2xl font-bold text-gray-800 dark:text-gray-200" x-text="stats.scheduled"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="flex flex-col lg:flex-row gap-6">
+        <div class="lg:w-1/3 space-y-6">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">Quick Actions</h3>
+                <div class="space-y-3">
+                    <button @click="newBroadcast()" class="w-full flex items-center justify-center space-x-2 px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition duration-150 ease-in-out">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        <span>New Broadcast</span>
+                    </button>
+                    <button @click="openModal('templateBrowser')" class="w-full flex items-center justify-center space-x-2 px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition duration-150 ease-in-out">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
+                        </svg>
+                        <span>Use Template</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">Target Audience</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Chama</label>
+                        <select x-model="selectedChama" @change="filterRecipients()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-900 dark:text-gray-200 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                             <option value="all">All Chamas</option>
+                              <template x-for="chama in chamas" :key="chama.id">
+                                  <option :value="chama.id" x-text="chama.name"></option>
+                              </template>
+                         </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Send To</label>
+                        <select x-model="selectedGroup" @change="filterRecipients()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-900 dark:text-gray-200 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="all">All Members</option> {# Renamed from 'chama' for clarity when 'All Chamas' is selected #}
+                            <option value="specific">Specific Member</option>
+                            <option value="penalties">Members with Penalties</option>
+                            <option value="loans">Members with Loans</option>
+                            <option value="overdue">Members with Overdue</option>
+                            <option value="inactive">Inactive Members</option>
+                            {# Add other relevant groups #}
+                        </select>
+                    </div>
+
+                    <template x-if="selectedGroup === 'specific'">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Member</label>
+                            {# A real implementation would use a searchable dropdown/select2 here #}
+                            <select x-model="selectedSpecificMemberId" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-900 dark:text-gray-200 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">Choose a member...</option>
+                                <template x-for="member in targetMembers" :key="member.id"> {# Show members in the current chama filter #}
+                                     <option :value="member.id" x-text="member.name"></option>
+                                </template>
+                    </select>
+                    <p x-show="targetMembers.length === 0 && selectedChama !== 'all'" class="mt-1 text-sm text-yellow-600 dark:text-yellow-400">No members found in the selected Chama.</p>
+                </div>
+                </template>
+
+                <div class="text-sm text-gray-600 dark:text-gray-400 mt-4">
+                    Selected recipients: <span x-text="recipientCountText" class="font-semibold text-gray-800 dark:text-gray-200"></span>
+                </div>
+                <p x-show="generalError" class="text-red-600 dark:text-red-400 text-sm mt-2" x-text="generalError"></p>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-1 space-y-6 min-w-0"> {# Added min-w-0 here #}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 sm:gap-0">
+                <h3 class="font-semibold text-gray-800 dark:text-gray-200">Compose Message</h3>
+                <div class="flex space-x-2">
+                    <button @click="messageType = 'sms'" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-150 ease-in-out" :class="messageType === 'sms' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'">
+                            SMS
+                        </button>
+                    <button @click="messageType = 'email'" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-150 ease-in-out" :class="messageType === 'email' ? 'bg-purple-600 text-white hover:bg-purple-700' : 'text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'">
+                            Email
+                        </button>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div x-show="messageType === 'email'">
+                    <label for="message-subject" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subject</label>
+                    <input type="text" id="message-subject" x-model="messageSubject" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-900 dark:text-gray-200 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter subject...">
+                </div>
+
+                <div>
+                    <label for="message-content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Message Content</label>
+                    <textarea id="message-content" x-model="messageContent" rows="6" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-900 dark:text-gray-200 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" :placeholder="messageType === 'sms' ? 'Enter SMS message...' : 'Enter email content...'"></textarea>
+                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        <span x-show="messageType === 'sms'">Characters: <span x-text="messageContent.length"></span></span>
+                        <span x-show="messageType === 'email'">Words: <span x-text="messageContent.split(/\s+/).filter(word => word.length > 0).length"></span></span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Available Merge Tags</label>
+                    <div class="flex flex-wrap gap-2">
+                        <template x-for="tag in availableMergeTags" :key="tag.tag">
+                                 <span @click="insertMergeTag(tag.tag)"
+                                       class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-800 transition duration-150 ease-in-out"
+                                       x-tooltip.placement.bottom="tag.description">
+                                     <span x-text="tag.tag"></span>
+                                 </span>
+                             </template>
+                        <span x-show="availableMergeTags.length === 0" class="text-sm text-gray-500 dark:text-gray-400">No tags available for this message type.</span>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Click a tag to insert it into the message content.</p>
+                </div>
+
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button @click="openModal('schedule')" class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition duration-150 ease-in-out">
+                            Schedule
+                        </button>
+                    <button @click="openModal('preview')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                             <span>Preview & Send</span>
+                         </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">Recent Communications</h3>
+
+            {# History Filters/Search/Pagination Controls #}
+            <div class="mb-4 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-2">
+                <div class="w-full sm:w-auto flex-grow sm:flex-grow-0">
+                    <input type="text" x-model="historySearchTerm" placeholder="Search history..." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-900 dark:text-gray-200 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                <div class="w-full sm:w-auto flex items-center justify-end gap-2">
+                    <label for="history-type-filter" class="text-sm font-medium text-gray-700 dark:text-gray-300">Type:</label>
+                    <select id="history-type-filter" x-model="historyFilterType" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-900 dark:text-gray-200 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                              <option value="all">All</option>
+                              <option value="sms">SMS</option>
+                              <option value="email">Email</option>
+                          </select>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer" @click="sortHistoryBy('date')">Date <span x-show="historySortColumn==='date'" x-text="historySortDirection==='asc'?'▲':'▼'"></span></th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer" @click="sortHistoryBy('recipients')">Recipients <span x-show="historySortColumn==='recipients'" x-text="historySortDirection==='asc'?'▲':'▼'"></span></th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer" @click="sortHistoryBy('subject')">Subject <span x-show="historySortColumn==='subject'" x-text="historySortDirection==='asc'?'▲':'▼'"></span></th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
+                            <th class="relative px-6 py-3"><span class="sr-only">View</span></th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <template x-if="paginatedCommunications.length === 0">
+                                <tr>
+                                    <td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No communication history found.</td>
+                                </tr>
+                            </template>
+                        <template x-for="comm in paginatedCommunications" :key="comm.id">
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer" @click="openModal('historyDetail', comm)">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200" x-text="formatDate(comm.date)"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                         <span class="px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                               :class="comm.type === 'sms' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'"
+                                               x-text="comm.type.toUpperCase()"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200" x-text="comm.recipients"></td> {# This would ideally be a count/summary #}
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200" x-text="comm.subject || 'N/A'"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                         <span class="px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                               :class="comm.status === 'delivered' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : comm.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'"
+                                               x-text="comm.status"></span>
+                                    </td>
+                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                         <button @click.stop="openModal('historyDetail', comm)" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">View</button>
+                                    </td>
+                                </tr>
+                            </template>
+                    </tbody>
+                </table>
+            </div>
+
+            {# History Pagination #}
+            <div x-show="historyTotalPages > 1" class="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
+                <div class="flex-1 flex justify-between sm:hidden">
+                    <button @click="historyPrevPage" :disabled="historyCurrentPage <= 1" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"> Previous </button>
+                    <button @click="historyNextPage" :disabled="historyCurrentPage >= historyTotalPages" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"> Next </button>
+                </div>
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-gray-700 dark:text-gray-300"> Showing <span class="font-medium" x-text="historyPaginationStart"></span> to <span class="font-medium" x-text="historyPaginationEnd"></span> of <span class="font-medium" x-text="filteredCommunications.length"></span> results </p>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button @click="historyPrevPage" :disabled="historyCurrentPage <= 1" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span class="sr-only">Previous</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"> <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /> </svg>
+                                </button>
+                            <button @click="historyNextPage" :disabled="historyCurrentPage >= historyTotalPages" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span class="sr-only">Next</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"> <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /> </svg>
+                                </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+{# Reusable Modal Structure #}
+<template x-teleport="body">
+         <div x-show="modal.isOpen"
+             x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+              class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center px-4 py-6">
+
+             <div x-show="modal.isOpen"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                  class="bg-white dark:bg-gray-800 rounded-xl shadow-xl transform transition-all w-full max-w-lg md:max-w-2xl lg:max-w-3xl"
+                   @click.outside="closeModal()"> {# Click outside to close #}
+
+                 <div class="p-6">
+                     <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4" x-text="modal.title"></h3>
+
+                     <div x-show="modal.name === 'templateBrowser'" class="space-y-4 max-h-96 overflow-y-auto">
+                         <div class="flex items-center space-x-4 mb-4">
+                             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Filter Type:</label>
+                              <select x-model="templateFilterType" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-900 dark:text-gray-200 text-sm">
+                                 <option value="all">All</option>
+                                  <option value="sms">SMS</option>
+                                  <option value="email">Email</option>
+                              </select>
+                         </div>
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <template x-for="template in filteredTemplates" :key="template.id">
+                                 <div @click="selectTemplate(template)"
+                                      class="border border-gray-200 dark:border-gray-700 p-4 rounded-lg cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 hover:shadow-md transition duration-150 ease-in-out">
+                                     <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-2" x-text="template.title"></h4>
+                                     <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-3" x-text="template.body || template.content"></p> {# Show body for email, content for sms #}
+                                      <div class="text-xs font-medium mt-2"
+                                           :class="template.type === 'sms' ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400'"
+                                           x-text="template.type.toUpperCase()"></div>
+                                 </div>
+                             </template>
+<div x-show="filteredTemplates.length === 0" class="md:col-span-2 text-center text-gray-500 dark:text-gray-400 text-sm">No templates found matching filter.</div>
+</div>
+</div>
+
+<div x-show="modal.name === 'schedule'" class="space-y-4">
+    <p class="text-gray-700 dark:text-gray-300">Schedule this message to be sent later.</p>
+    <div>
+        <label for="schedule-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date</label>
+        <input type="date" id="schedule-date" x-model="scheduledDate" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-900 dark:text-gray-200 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+    </div>
+    <div>
+        <label for="schedule-time" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time</label>
+        <input type="time" id="schedule-time" x-model="scheduledTime" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-900 dark:text-gray-200 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+    </div>
+    <div x-show="modalError" class="text-red-600 dark:text-red-400 text-sm" x-text="modalError"></div>
+</div>
+
+<div x-show="modal.name === 'historyDetail'" class="space-y-4 max-h-96 overflow-y-auto">
+    <template x-if="selectedCommunication">
+                             <div class="space-y-3">
+                                 <p><span class="font-medium text-gray-700 dark:text-gray-300">Sent On:</span> <span class="dark:text-gray-200" x-text="formatDate(selectedCommunication.date)"></span></p>
+                                 <p><span class="font-medium text-gray-700 dark:text-gray-300">Type:</span>
+                                      <span class="px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                            :class="selectedCommunication.type === 'sms' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'"
+                                            x-text="selectedCommunication.type.toUpperCase()"></span>
+                                 </p>
+                                  <p><span class="font-medium text-gray-700 dark:text-gray-300">Status:</span>
+                                       <span class="px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                              :class="selectedCommunication.status === 'delivered' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : selectedCommunication.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'"
+                                              x-text="selectedCommunication.status"></span>
+                                  </p>
+                                 <p><span class="font-medium text-gray-700 dark:text-gray-300">Recipients:</span> <span class="dark:text-gray-200" x-text="selectedCommunication.recipients"></span></p> {# Ideally list them or count them #}
+                                  <p x-show="selectedCommunication.type === 'email'"><span class="font-medium text-gray-700 dark:text-gray-300">Subject:</span> <span class="dark:text-gray-200" x-text="selectedCommunication.subject || 'N/A'"></span></p>
+                                  <div>
+                                      <p class="font-medium text-gray-700 dark:text-gray-300">Content:</p>
+                                      <div class="mt-2 p-4 bg-gray-100 dark:bg-gray-900 rounded-lg text-gray-800 dark:text-gray-200 whitespace-pre-wrap" x-text="selectedCommunication.content"></div>
+                                  </div>
+                             </div>
+                         </template>
+    <div x-show="!selectedCommunication" class="text-center text-gray-500 dark:text-gray-400">Details not available.</div>
+</div>
+
+<div x-show="modal.name === 'preview'" class="space-y-4 max-h-96 overflow-y-auto">
+    <p class="text-gray-700 dark:text-gray-300">Review the message before sending.</p>
+    <template x-if="modal.name === 'preview'"> {# Ensure we are in preview modal #}
+                             <div class="space-y-4">
+                                 <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                     Sending to: <span class="font-semibold" x-text="recipientCountText"></span>
+                                 </p>
+                                  <div x-show="messageType === 'email'">
+                                     <div class="font-medium text-gray-700 dark:text-gray-300">Subject:</div>
+                                     <div class="p-3 bg-gray-100 dark:bg-gray-900 rounded-lg text-gray-800 dark:text-gray-200" x-text="messageSubject || 'No Subject'"></div>
+                                  </div>
+                                  <div>
+                                     <div class="font-medium text-gray-700 dark:text-gray-300">Content:</div>
+                                     <div class="p-3 bg-gray-100 dark:bg-gray-900 rounded-lg text-gray-800 dark:text-gray-200 whitespace-pre-wrap" x-text="messageContent || 'No Content'"></div>
+                                  </div>
+                                  {# Mock Preview with Merge Tags Resolved for a sample member #}
+                                  <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                                      <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">Preview for Sample Member (<span x-text="sampleMember ? sampleMember.name : 'N/A'"></span>)</h4>
+                                      <div x-show="messageType === 'email'">
+                                          <div class="font-medium text-gray-700 dark:text-gray-300">Subject:</div>
+                                           <div class="p-3 bg-gray-200 dark:bg-gray-700 rounded-lg text-gray-800 dark:text-gray-200" x-html="resolveMergeTags(messageSubject, sampleMember)"></div>
+                                      </div>
+                                       <div>
+                                          <div class="font-medium text-gray-700 dark:text-gray-300">Content:</div>
+                                           <div class="p-3 bg-gray-200 dark:bg-gray-700 rounded-lg text-gray-800 dark:text-gray-200 whitespace-pre-wrap" x-html="resolveMergeTags(messageContent, sampleMember)"></div>
+                                       </div>
+                                       <p x-show="!sampleMember" class="text-sm text-yellow-600 dark:text-yellow-400 mt-2">Cannot preview merge tags without sample member data.</p>
+                                  </div>
+                             </div>
+                         </template>
+    <div x-show="modalError" class="text-red-600 dark:text-red-400 text-sm mt-2" x-text="modalError"></div>
+</div>
+
+{# Modal Actions #}
+<div class="flex justify-end space-x-3 mt-6">
+    <button type="button" @click="closeModal()" class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition duration-150 ease-in-out">
+                            <span x-text="modal.name === 'preview' ? 'Edit Message' : 'Cancel'">Cancel</span>
+                         </button>
+    <button type="button" x-show="modal.name === 'preview'" @click="confirmSend()" :disabled="targetMembers.length === 0" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150 ease-in-out">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                                 </svg>
+                              <span>Send Now</span>
+                          </button>
+    <button type="button" x-show="modal.name === 'schedule'" @click="saveScheduledMessage()" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg flex items-center space-x-2 transition duration-150 ease-in-out">
+                              Save Schedule
+                          </button>
+</div>
+
+</div>
+</div>
+</div>
+</template>
+
+
+</div>{# End container #}
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('communicationManager', () => ({
+            // State
+            chamas: [],
+            members: [], // All potential members
+            templates: [],
+            communications: [], // Communication history
+            selectedChama: 'all', // Filter for recipients
+            selectedGroup: 'all', // 'all', 'specific', 'penalties', etc.
+            selectedSpecificMemberId: '', // Used if selectedGroup is 'specific'
+
+            messageType: 'sms', // 'sms' or 'email'
+            messageSubject: '', // For email
+            messageContent: '', // For SMS or email body
+
+            historySearchTerm: '',
+            historyFilterType: 'all', // 'all', 'sms', 'email'
+            historySortColumn: 'date',
+            historySortDirection: 'desc',
+            historyCurrentPage: 1,
+            historyItemsPerPage: 10, // Adjust as needed
+
+            modal: {
+                isOpen: false,
+                name: null, // 'templateBrowser', 'schedule', 'preview', 'historyDetail'
+                title: '',
+            },
+            selectedCommunication: null, // For historyDetail modal
+            scheduledDate: '',
+            scheduledTime: '',
+            modalError: null,
+            generalError: null, // For page-level errors
+
+            // Mock stats (connect to real data later)
+            stats: {
+                pending: 42,
+                delivered: 1192,
+                scheduled: 8,
+            },
+
+            // Mock Merge Tags
+            mergeTags: [{
+                    tag: '{name}',
+                    description: 'Member Full Name',
+                    types: ['sms', 'email']
+                }, {
+                    tag: '{first_name}',
+                    description: 'Member First Name',
+                    types: ['sms', 'email']
+                }, {
+                    tag: '{chama_name}',
+                    description: 'Chama Name',
+                    types: ['sms', 'email']
+                }, {
+                    tag: '{loan_amount}',
+                    description: 'Member Loan Amount',
+                    types: ['sms', 'email'],
+                    group: 'loans'
+                }, {
+                    tag: '{loan_balance}',
+                    description: 'Member Loan Balance',
+                    types: ['sms', 'email'],
+                    group: 'loans'
+                }, {
+                    tag: '{loan_due_date}',
+                    description: 'Member Loan Due Date',
+                    types: ['sms', 'email'],
+                    group: 'loans'
+                }, {
+                    tag: '{penalty_amount}',
+                    description: 'Member Total Penalty',
+                    types: ['sms', 'email'],
+                    group: 'penalties'
+                }, {
+                    tag: '{savings_balance}',
+                    description: 'Member Savings Balance',
+                    types: ['sms', 'email']
+                },
+                // Add more tags as needed
+            ],
+
+            // Computed Properties
+
+            get targetMembers() {
+                // Returns the list of members based on selected Chama and Group filters
+                let members = this.members;
+
+                // 1. Filter by selected Chama
+                if (this.selectedChama !== 'all') {
+                    const chamaIdInt = parseInt(this.selectedChama);
+                    if (!isNaN(chamaIdInt)) {
+                        members = members.filter(member => member.chamaId === chamaIdInt);
+                    } else {
+                        // Invalid chama ID selected, return empty
+                        return [];
+                    }
+                }
+
+                // 2. Filter by selected Group
+                switch (this.selectedGroup) {
+                    case 'all':
+                        // Already filtered by chama, no further group filter
+                        break;
+                    case 'specific':
+                        // If 'specific' is selected, but no specific member is chosen yet, return empty
+                        if (!this.selectedSpecificMemberId) return [];
+                        // Filter down to just the selected member
+                        members = members.filter(member => member.id === parseInt(this.selectedSpecificMemberId));
+                        break;
+                    case 'penalties':
+                        // Mock filter: Assume members with penaltyAmount > 0
+                        members = members.filter(member => member.penaltyAmount && member.penaltyAmount > 0);
+                        break;
+                    case 'loans':
+                        // Mock filter: Assume members with loanBalance > 0
+                        members = members.filter(member => member.loanBalance && member.loanBalance > 0);
+                        break;
+                    case 'overdue':
+                        // Mock filter: Assume members with isOverdue === true
+                        members = members.filter(member => member.isOverdue);
+                        break;
+                    case 'inactive':
+                        // Mock filter: Assume members with isActive === false
+                        members = members.filter(member => member.isActive === false);
+                        break;
+                        // Add cases for other groups
+                    default:
+                        // Unknown group, return empty
+                        members = [];
+                        break;
+                }
+
+                // Ensure only members with valid contact info for the message type are included (simplified mock)
+                if (this.messageType === 'sms') {
+                    members = members.filter(member => member.phone && member.phone.startsWith('+') && member.phone.length > 9); // Basic phone check
+                } else if (this.messageType === 'email') {
+                    members = members.filter(member => member.email && member.email.includes('@')); // Basic email check
+                }
+
+
+                return members;
+            },
+
+            get recipientCountText() {
+                if (this.selectedGroup === 'specific' && this.selectedSpecificMemberId) {
+                    const member = this.members.find(m => m.id === parseInt(this.selectedSpecificMemberId));
+                    return member ? member.name : '0 members';
+                }
+                const count = this.targetMembers.length;
+                const groupName = this.formatRecipientGroup(this.selectedGroup);
+                const chamaName = this.selectedChama === 'all' ? 'All Chamas' : this.getChamaName(parseInt(this.selectedChama));
+
+                if (this.selectedGroup === 'all' && this.selectedChama === 'all') {
+                    return `${count} members (${groupName})`;
+                } else if (this.selectedGroup === 'all') {
+                    return `${count} members (${groupName} in ${chamaName})`;
+                } else if (this.selectedChama === 'all') {
+                    return `${count} members (${groupName} across all Chamas)`;
+                } else {
+                    return `${count} members (${groupName} in ${chamaName})`;
+                }
+
+            },
+
+            get availableMergeTags() {
+                // Filter merge tags based on message type and selected recipient group
+                return this.mergeTags.filter(tag =>
+                    tag.types.includes(this.messageType) &&
+                    (!tag.group || this.selectedGroup === tag.group || this.selectedGroup === 'all' || this.selectedGroup === 'specific') // Tag is available if it has no group restriction, or if the current group matches, or if sending to 'all'/'specific' (where individual member data might be available)
+                );
+            },
+
+            get filteredTemplates() {
+                // Filter templates based on the selected type in the template browser modal
+                if (this.templateFilterType === 'all') return this.templates;
+                return this.templates.filter(template => template.type === this.templateFilterType);
+            },
+
+            get filteredCommunications() {
+                let history = this.communications;
+
+                // 1. Filter by type
+                if (this.historyFilterType !== 'all') {
+                    history = history.filter(comm => comm.type === this.historyFilterType);
+                }
+
+                // 2. Filter by search term (basic)
+                if (this.historySearchTerm) {
+                    const lowerSearch = this.historySearchTerm.toLowerCase();
+                    history = history.filter(comm => {
+                        // Coerce each field to string (defaults to empty) so toLowerCase() never blows up
+                        const subject = (comm.subject || '').toLowerCase();
+                        const content = (comm.content || '').toLowerCase();
+                        const recipients = (comm.recipients || '').toLowerCase();
+                        const status = (comm.status || '').toLowerCase();
+
+                        // If any of them contains the search term, keep it
+                        return (
+                            subject.includes(lowerSearch) ||
+                            content.includes(lowerSearch) ||
+                            recipients.includes(lowerSearch) ||
+                            status.includes(lowerSearch)
+                        );
+                    });
+                }
+
+                // 3. Apply sorting
+                if (this.historySortColumn) {
+                    history = history.sort((a, b) => {
+                        const aValue = a[this.historySortColumn];
+                        const bValue = b[this.historySortColumn];
+
+                        if (this.historySortColumn === 'date') {
+                            // Assuming date is in a sortable format like YYYY-MM-DD or ISO
+                            if (aValue < bValue) return this.historySortDirection === 'asc' ? -1 : 1;
+                            if (aValue > bValue) return this.historySortDirection === 'asc' ? 1 : -1;
+                            return 0;
+                        }
+                        // Default string/locale compare for others
+                        if (typeof aValue === 'string' && typeof bValue === 'string') {
+                            return this.historySortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+                        }
+                        // Fallback for other types
+                        if (aValue < bValue) return this.historySortDirection === 'asc' ? -1 : 1;
+                        if (aValue > bValue) return this.historySortDirection === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                }
+
+                return history;
+            },
+
+            get paginatedCommunications() {
+                const start = (this.historyCurrentPage - 1) * this.historyItemsPerPage;
+                const end = start + this.historyItemsPerPage;
+                return this.filteredCommunications.slice(start, end);
+            },
+
+            get historyTotalPages() {
+                return Math.ceil(this.filteredCommunications.length / this.historyItemsPerPage);
+            },
+
+            get historyPaginationStart() {
+                if (this.filteredCommunications.length === 0) return 0;
+                return (this.historyCurrentPage - 1) * this.historyItemsPerPage + 1;
+            },
+
+            get historyPaginationEnd() {
+                const end = this.historyCurrentPage * this.historyItemsPerPage;
+                return Math.min(end, this.filteredCommunications.length);
+            },
+
+            get sampleMember() {
+                // Get a sample member to resolve merge tags in preview
+                if (this.targetMembers.length > 0) {
+                    return this.targetMembers[0]; // Just pick the first one
+                }
+                // Fallback mock member if no target members found
+                return {
+                    id: 999,
+                    chamaId: null,
+                    name: 'Sample Name',
+                    first_name: 'Sample',
+                    phone: '+2547xxxxxx',
+                    email: 'sample@example.com',
+                    loanAmount: 15000,
+                    loanBalance: 10000,
+                    loanDueDate: '2024-12-31',
+                    penaltyAmount: 500,
+                    savingsBalance: 25000,
+                    isOverdue: true,
+                    isActive: true,
+                    // Add other potential merge tag data
+                };
+            },
+
+
+            // Methods
+            init() {
+                // Load static data
+                this.fetchChamas();
+                this.fetchMembers();
+                this.fetchTemplates();
+                this.fetchCommunications();
+
+                // Initial recipient filtering based on default selectedGroup/Chama
+                this.filterRecipients();
+
+                // Add tooltip initialization if you're using a library like Tippy.js with Alpine
+                // If not, remove the `x-tooltip` directive
+            },
+
+            fetchChamas() {
+                // Static Mock Data for Chamas
+                console.log('Fetching mock chamas...');
+                this.chamas = [{
+                    id: 1,
+                    name: 'Chama Alpha'
+                }, {
+                    id: 2,
+                    name: 'Chama Beta'
+                }, {
+                    id: 3,
+                    name: 'Chama Gamma'
+                }, ];
+            },
+
+            fetchMembers() {
+                // Static Mock Data for Members (more detailed for merge tags/filtering)
+                console.log('Fetching mock members...');
+                this.members = [{
+                        id: 1,
+                        chamaId: 1,
+                        name: 'Alice Smith',
+                        first_name: 'Alice',
+                        phone: '+254711111111',
+                        email: 'alice@example.com',
+                        loanAmount: 20000,
+                        loanBalance: 5000,
+                        loanDueDate: '2024-08-15',
+                        penaltyAmount: 0,
+                        savingsBalance: 30000,
+                        isOverdue: false,
+                        isActive: true
+                    }, {
+                        id: 2,
+                        chamaId: 1,
+                        name: 'Bob Johnson',
+                        first_name: 'Bob',
+                        phone: '+254722222222',
+                        email: 'bob@example.com',
+                        loanAmount: 0,
+                        loanBalance: 0,
+                        loanDueDate: null,
+                        penaltyAmount: 1000,
+                        savingsBalance: 15000,
+                        isOverdue: false,
+                        isActive: true
+                    }, {
+                        id: 3,
+                        chamaId: 2,
+                        name: 'Charlie Davis',
+                        first_name: 'Charlie',
+                        phone: '+254733333333',
+                        email: 'charlie@example.com',
+                        loanAmount: 30000,
+                        loanBalance: 30000,
+                        loanDueDate: '2024-07-30',
+                        penaltyAmount: 0,
+                        savingsBalance: 40000,
+                        isOverdue: true,
+                        isActive: true
+                    }, {
+                        id: 4,
+                        chamaId: 2,
+                        name: 'Diana Miller',
+                        first_name: 'Diana',
+                        phone: '+254744444444',
+                        email: 'diana@example.com',
+                        loanAmount: 0,
+                        loanBalance: 0,
+                        loanDueDate: null,
+                        penaltyAmount: 0,
+                        savingsBalance: 20000,
+                        isOverdue: false,
+                        isActive: false
+                    }, // Inactive
+                    {
+                        id: 5,
+                        chamaId: 3,
+                        name: 'Ethan Wilson',
+                        first_name: 'Ethan',
+                        phone: '+254755555555',
+                        email: 'ethan@example.com',
+                        loanAmount: 5000,
+                        loanBalance: 0,
+                        loanDueDate: '2024-06-01',
+                        penaltyAmount: 0,
+                        savingsBalance: 10000,
+                        isOverdue: false,
+                        isActive: true
+                    }, {
+                        id: 6,
+                        chamaId: 1,
+                        name: 'Fiona Brown',
+                        first_name: 'Fiona',
+                        phone: '+254766666666',
+                        email: 'fiona@example.com',
+                        loanAmount: 10000,
+                        loanBalance: 10000,
+                        loanDueDate: '2024-08-01',
+                        penaltyAmount: 0,
+                        savingsBalance: 25000,
+                        isOverdue: true,
+                        isActive: true
+                    }, // Overdue
+                ];
+                this.filterRecipients(); // Initial filter based on default selectedGroup/Chama
+            },
+
+            fetchTemplates() {
+                // Static Mock Data for Templates (improved structure)
+                console.log('Fetching mock templates...');
+                this.templates = [{
+                        id: 101,
+                        title: 'Loan Repayment Reminder (SMS)',
+                        type: 'sms',
+                        content: 'Hello {first_name}, your loan repayment of {loan_amount} is due on {loan_due_date}. Please pay {loan_balance} outstanding. From {chama_name}.'
+                    }, {
+                        id: 102,
+                        title: 'Monthly Meeting Notice (Email)',
+                        type: 'email',
+                        subject: 'Chama Meeting Notice: {chama_name}',
+                        body: 'Dear {name},\n\nThis is a reminder for our upcoming monthly meeting.\nDate: [Meeting Date]\nTime: [Meeting Time]\nLocation: [Meeting Location]\n\nAgenda: [Brief Agenda]\n\nWe look forward to seeing you there.\n\nBest Regards,\nThe {chama_name} Committee'
+                    }, {
+                        id: 103,
+                        title: 'Penalty Notification (SMS)',
+                        type: 'sms',
+                        content: 'Dear {name}, you have an outstanding penalty of {penalty_amount}. Kindly settle it. From {chama_name}.'
+                    }, {
+                        id: 104,
+                        title: 'Welcome to Chama (Email)',
+                        type: 'email',
+                        subject: 'Welcome to {chama_name}!',
+                        body: 'Dear {name},\n\nWelcome to {chama_name}! We are excited to have you join our community...\n\n[More welcome info]\n\nBest Regards,\nThe {chama_name} Committee'
+                    }, {
+                        id: 105,
+                        title: 'Savings Balance Update (SMS)',
+                        type: 'sms',
+                        content: 'Hello {first_name}, your current savings balance is {savings_balance}. From {chama_name}.'
+                    }, {
+                        id: 106,
+                        title: 'Generic Announcement (SMS)',
+                        type: 'sms',
+                        content: 'Announcement from {chama_name}: {content}.'
+                    }, // Simple generic with content tag
+                ];
+            },
+
+            fetchCommunications() {
+                // Static Mock Data for History
+                console.log('Fetching mock history...');
+                this.communications = [{
+                    id: 1001,
+                    date: '2023-07-20T10:00:00Z',
+                    type: 'sms',
+                    recipients: 'All Members (Chama Alpha)',
+                    subject: null,
+                    content: 'Meeting reminder today at 2 PM.',
+                    status: 'delivered'
+                }, {
+                    id: 1002,
+                    date: '2023-07-18T15:30:00Z',
+                    type: 'email',
+                    recipients: 'Members with Loans (Chama Beta)',
+                    subject: 'Loan Reminder',
+                    content: 'Dear member, your loan...',
+                    status: 'delivered'
+                }, {
+                    id: 1003,
+                    date: '2023-07-21T09:00:00Z',
+                    type: 'sms',
+                    recipients: 'Specific Member (Alice Smith)',
+                    subject: null,
+                    content: 'Your savings balance is 30000.',
+                    status: 'pending'
+                }, {
+                    id: 1004,
+                    date: '2023-07-21T11:00:00Z',
+                    type: 'email',
+                    recipients: 'All Members (Chama Gamma)',
+                    subject: 'Minutes from last meeting',
+                    content: 'Hi team, Find the minutes attached...',
+                    status: 'failed'
+                }, {
+                    id: 1005,
+                    date: '2023-07-22T14:00:00Z',
+                    type: 'sms',
+                    recipients: 'Members with Penalties (Chama Alpha)',
+                    subject: null,
+                    content: 'Penalty reminder.',
+                    status: 'delivered'
+                }, {
+                    id: 1006,
+                    date: '2023-07-23T10:00:00Z',
+                    type: 'sms',
+                    recipients: 'Members with Overdue (All Chamas)',
+                    subject: null,
+                    content: 'Your loan is overdue.',
+                    status: 'pending'
+                }, ];
+            },
+
+            filterRecipients() {
+                // This method recalculates targetMembers via the computed property
+                // No explicit filtering logic needed here, just ensures computed runs
+                console.log(`Filtering recipients for Chama: ${this.selectedChama}, Group: ${this.selectedGroup}`);
+                this.selectedSpecificMemberId = ''; // Reset specific member when group changes
+                this.generalError = null; // Clear general errors
+                if (this.selectedGroup === 'specific' && this.targetMembers.length === 0 && this.selectedChama !== 'all') {
+                    this.generalError = 'No members found in this Chama to select specifically.';
+                } else if (this.targetMembers.length === 0 && (this.selectedGroup !== 'all' || this.selectedChama !== 'all')) {
+                    this.generalError = `No members found matching the selected criteria (${this.formatRecipientGroup(this.selectedGroup)} in ${this.selectedChama === 'all' ? 'All Chamas' : this.getChamaName(parseInt(this.selectedChama))}).`;
+                }
+            },
+
+            newBroadcast() {
+                // Reset composer to a fresh message
+                this.messageSubject = '';
+                this.messageContent = '';
+                this.messageType = 'sms'; // Default to SMS
+                this.selectedGroup = 'all'; // Default to all members in current filter
+                this.selectedSpecificMemberId = '';
+                this.showTemplates = false; // Ensure template grid is hidden
+                this.filterRecipients(); // Recalculate recipients
+                console.log('New broadcast composer cleared.');
+            },
+
+            insertMergeTag(tag) {
+                // Basic implementation: append tag to content
+                this.messageContent += tag;
+                // For a better UX, you'd track cursor position and insert there
+                console.log(`Inserted tag: ${tag}`);
+            },
+
+            selectTemplate(template) {
+                // Load selected template into the composer
+                this.messageType = template.type;
+                if (template.type === 'email') {
+                    this.messageSubject = template.subject || '';
+                    this.messageContent = template.body || '';
+                } else {
+                    this.messageSubject = ''; // SMS has no subject
+                    this.messageContent = template.content || '';
+                }
+                this.closeModal('templateBrowser'); // Close template modal
+                console.log('Template loaded:', template.title);
+            },
+
+            openModal(modalName, data = null) {
+                this.modalError = null; // Clear modal error
+                this.modal.name = modalName;
+                this.modal.isOpen = true;
+
+                if (modalName === 'templateBrowser') {
+                    this.modal.title = 'Browse Templates';
+                    this.templateFilterType = this.messageType; // Filter templates by current message type
+                } else if (modalName === 'schedule') {
+                    this.modal.title = 'Schedule Message';
+                    this.scheduledDate = new Date().toISOString().split('T')[0]; // Default to today
+                    this.scheduledTime = ''; // Default time
+                } else if (modalName === 'historyDetail' && data) {
+                    this.modal.title = 'Communication Details';
+                    this.selectedCommunication = data;
+                } else if (modalName === 'preview') {
+                    this.modal.title = 'Preview Message';
+                    // Check if recipients are selected before preview
+                    if (this.targetMembers.length === 0) {
+                        this.modalError = 'Cannot preview: No recipients selected matching your criteria.';
+                        return; // Don't open if no recipients
+                    }
+                } else {
+                    // Unknown modal name, close
+                    this.closeModal();
+                    return;
+                }
+                console.log(`Opening modal: ${modalName}`);
+            },
+
+            closeModal() {
+                this.modal.isOpen = false;
+                this.modal.name = null;
+                this.modal.title = '';
+                this.modalError = null;
+                this.selectedCommunication = null; // Clear history detail data
+                this.scheduledDate = ''; // Clear schedule data
+                this.scheduledTime = ''; // Clear schedule data
+                console.log('Modal closed.');
+            },
+
+            // Mock send process - opens preview first
+            confirmSend() {
+                console.log('Attempting to send message...');
+                this.modalError = null; // Clear error
+
+                // Basic validation
+                if (this.targetMembers.length === 0) {
+                    this.modalError = 'Cannot send: No recipients selected.';
+                    return;
+                }
+                if (!this.messageContent && !(this.messageType === 'email' && this.messageSubject)) {
+                    this.modalError = 'Cannot send: Message content or email subject/body is empty.';
+                    return;
+                }
+
+                // Mock API Call to Send (replace with actual fetch/axios call)
+                console.log("MOCK SENDING:", {
+                    type: this.messageType,
+                    subject: this.messageSubject,
+                    content: this.messageContent,
+                    recipients: this.targetMembers.map(m => ({
+                        id: m.id,
+                        name: m.name
+                    })), // Just send IDs/names
+                    recipientCount: this.targetMembers.length,
+                    selectedGroup: this.selectedGroup,
+                    selectedChama: this.selectedChama,
+                });
+
+                // Mock add to history (on successful *attempt* to send)
+                const newComm = {
+                    id: Date.now(), // Simple ID
+                    date: new Date().toISOString().split('T')[0], // Current date
+                    type: this.messageType,
+                    recipients: this.recipientCountText, // Store summary text
+                    subject: this.messageSubject,
+                    content: this.messageContent,
+                    status: 'pending', // Simulate pending status
+                    // Store more details like actual recipient IDs if needed
+                };
+                this.communications.unshift(newComm); // Add to the beginning of history
+
+                this.closeModal(); // Close preview modal
+                this.newBroadcast(); // Clear composer after sending
+                this.historyCurrentPage = 1; // Go to first page of history to see new message
+                console.log('Mock send successful, message added to history as pending.');
+                // In a real app, backend would handle actual sending and update status async
+            },
+
+            // Mock schedule process - saves as scheduled communication
+            saveScheduledMessage() {
+                console.log('Attempting to schedule message...');
+                this.modalError = null; // Clear error
+
+                // Basic validation
+                if (this.targetMembers.length === 0) {
+                    this.modalError = 'Cannot schedule: No recipients selected.';
+                    return;
+                }
+                if (!this.messageContent && !(this.messageType === 'email' && this.messageSubject)) {
+                    this.modalError = 'Cannot schedule: Message content or email subject/body is empty.';
+                    return;
+                }
+                if (!this.scheduledDate || !this.scheduledTime) {
+                    this.modalError = 'Please select a date and time to schedule.';
+                    return;
+                }
+                // Optional: Add validation for past dates/times
+
+                // Mock Save Logic (replace with actual API call to save scheduled message)
+                console.log("MOCK SCHEDULING:", {
+                    type: this.messageType,
+                    subject: this.messageSubject,
+                    content: this.messageContent,
+                    scheduleDateTime: `${this.scheduledDate}T${this.scheduledTime}:00Z`,
+                    recipients: this.targetMembers.map(m => ({
+                        id: m.id,
+                        name: m.name
+                    })),
+                    recipientCount: this.targetMembers.length,
+                    selectedGroup: this.selectedGroup,
+                    selectedChama: this.selectedChama,
+                });
+
+                // Mock add to history as scheduled (could use a different status like 'scheduled')
+                const newComm = {
+                    id: Date.now(), // Simple ID
+                    date: new Date().toISOString().split('T')[0], // Date Scheduled (or the scheduled date)
+                    type: this.messageType,
+                    recipients: this.recipientCountText,
+                    subject: this.messageSubject,
+                    content: this.messageContent + ` (Scheduled for ${this.scheduledDate} ${this.scheduledTime})`, // Add schedule info to content for mock display
+                    status: 'scheduled', // Custom status for scheduled
+                    // Store schedule time
+                };
+                this.communications.unshift(newComm); // Add to history
+
+                this.closeModal(); // Close schedule modal
+                this.newBroadcast(); // Clear composer
+                this.historyCurrentPage = 1; // Go to first page of history
+                console.log('Mock message scheduled, added to history.');
+                // In a real app, backend would handle scheduling and sending later
+            },
+
+
+            sortHistoryBy(column) {
+                if (this.historySortColumn === column) {
+                    this.historySortDirection = this.historySortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    this.historySortColumn = column;
+                    this.historySortDirection = 'asc'; // Default to ascending when changing column
+                }
+                this.historyCurrentPage = 1; // Reset to first page after sorting
+                console.log('Sorting history by:', this.historySortColumn, this.historySortDirection);
+            },
+
+            historyPrevPage() {
+                if (this.historyCurrentPage > 1) {
+                    this.historyCurrentPage--;
+                }
+            },
+
+            historyNextPage() {
+                if (this.historyCurrentPage < this.historyTotalPages) {
+                    this.historyCurrentPage++;
+                }
+            },
+
+
+            // Helper functions
+            formatDate(dateString) {
+                if (!dateString) return 'N/A';
+                // Handle ISO strings or YYYY-MM-DD
+                const date = dateString.includes('T') ? new Date(dateString) : new Date(dateString + 'T00:00:00Z'); // Treat YYYY-MM-DD as UTC start of day
+
+                // Check if date is valid
+                if (isNaN(date.getTime())) {
+                    console.error("Invalid date string for formatting:", dateString);
+                    return dateString; // Return original if invalid
+                }
+
+                const now = new Date();
+                const diffTime = Math.abs(now - date);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays <= 1 && date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()) {
+                    // Today
+                    return date.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } else if (diffDays <= 2 && date.getDate() === now.getDate() - 1 && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()) {
+                    // Yesterday
+                    return 'Yesterday ' + date.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } else if (diffDays < 7) {
+                    // Within the last week (simplistic)
+                    return date.toLocaleDateString('en-GB', {
+                        weekday: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } else {
+                    // Show date only for older
+                    return date.toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                    });
+                }
+            },
+
+            getChamaName(chamaId) {
+                const chama = this.chamas.find(c => c.id === chamaId);
+                return chama ? chama.name : 'Unknown Chama';
+            },
+
+            formatRecipientGroup(groupKey) {
+                const map = {
+                    'all': 'All Members',
+                    'specific': 'Specific Member',
+                    'penalties': 'Members with Penalties',
+                    'loans': 'Members with Loans',
+                    'overdue': 'Members with Overdue Loans',
+                    'inactive': 'Inactive Members',
+                    // Add other groups
+                };
+                return map[groupKey] || groupKey;
+            },
+
+            resolveMergeTags(content, member) {
+                if (!content || !member) return content;
+
+                let resolvedContent = content;
+                // Replace common member tags
+                resolvedContent = resolvedContent.replace(/{name}/g, member.name || '');
+                resolvedContent = resolvedContent.replace(/{first_name}/g, member.first_name || '');
+                resolvedContent = resolvedContent.replace(/{chama_name}/g, this.getChamaName(member.chamaId) || '');
+
+                // Replace group-specific tags (only if member data has it)
+                resolvedContent = resolvedContent.replace(/{loan_amount}/g, member.loanAmount !== undefined ? this.formatCurrency(member.loanAmount) : 'N/A');
+                resolvedContent = resolvedContent.replace(/{loan_balance}/g, member.loanBalance !== undefined ? this.formatCurrency(member.loanBalance) : 'N/A');
+                resolvedContent = resolvedContent.replace(/{loan_due_date}/g, member.loanDueDate || 'N/A');
+                resolvedContent = resolvedContent.replace(/{penalty_amount}/g, member.penaltyAmount !== undefined ? this.formatCurrency(member.penaltyAmount) : 'N/A');
+                resolvedContent = resolvedContent.replace(/{savings_balance}/g, member.savingsBalance !== undefined ? this.formatCurrency(member.savingsBalance) : 'N/A');
+
+
+                // Handle placeholder tags like {content} in generic templates
+                resolvedContent = resolvedContent.replace(/{content}/g, '[Dynamic Content]'); // This tag needs real logic based on template usage
+
+                return resolvedContent;
+            },
+
+            formatCurrency(amount) {
+                // Basic currency formatting (e.g., KES) - copied from previous component
+                if (amount === null || amount === undefined) return '0.00';
+                const num = parseFloat(amount);
+                if (isNaN(num)) return 'N/A';
+                return new Intl.NumberFormat('en-KE', {
+                    style: 'currency',
+                    currency: 'KES'
+                }).format(num);
+            },
+
+        }));
+    });
+</script>
+
+{% endblock %}

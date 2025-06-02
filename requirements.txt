@@ -1,0 +1,8 @@
+# chamasmart/requirements.txt
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-Login
+Flask-Mail
+python-dotenv
+PyMySQLreportlab==4.4.0

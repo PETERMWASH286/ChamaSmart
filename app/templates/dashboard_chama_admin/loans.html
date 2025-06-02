@@ -1,0 +1,1196 @@
+{% extends 'dashboard_chama_admin/layout.html' %} {% block title %}Loans Management{% endblock %} {% block content %}
+<div class="px-4 py-6 sm:px-6 lg:px-8 space-y-8" x-data="loansManager()" x-init="init()">
+
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold leading-tight text-gray-900 dark:text-gray-100">Loans Management</h1>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Manage all loan applications and repayment tracking</p>
+        </div>
+
+        <div class="w-full md:w-64 flex-shrink-0">
+            <label for="chama-selector" class="sr-only">Select Chama</label>
+            <select id="chama-selector" x-model="selectedChama" @change="fetchData" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md
+                           dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:focus:ring-indigo-600 dark:focus:border-indigo-600">
+                <option value="all">All Chamas</option>
+                <template x-for="chama in chamas" :key="chama.id">
+                    <option :value="chama.id" x-text="chama.name"></option>
+                </template>
+            </select>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {# Total Loans #}
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow border border-gray-200 dark:border-gray-700 transition-shadow hover:shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Loans</p>
+                    <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100" x-text="stats.totalLoans"></p>
+                </div>
+                <div class="bg-blue-100 dark:bg-blue-900/30 p-2.5 rounded-lg text-blue-600 dark:text-blue-400 flex-shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+            </div>
+        </div>
+
+        {# Total Amount Lent #}
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow border border-gray-200 dark:border-gray-700 transition-shadow hover:shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Amount Lent</p>
+                    <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100" x-text="formatCurrency(stats.totalAmountLent)"></p>
+                </div>
+                <div class="bg-green-100 dark:bg-green-900/30 p-2.5 rounded-lg text-green-600 dark:text-green-400 flex-shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0zm-4 0h.01"></path></svg>
+                </div>
+            </div>
+        </div>
+
+        {# Total Outstanding Balance #}
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow border border-gray-200 dark:border-gray-700 transition-shadow hover:shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Outstanding Balance</p>
+                    <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100" x-text="formatCurrency(stats.totalOutstandingBalance)"></p>
+                </div>
+                <div class="bg-orange-100 dark:bg-orange-900/30 p-2.5 rounded-lg text-orange-600 dark:text-orange-400 flex-shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4H5.07c.091-.73.293-1.434.606-2.07C6.364 15.165 8.251 13.5 12 13.5c3.75 0 5.636 1.665 6.314 2.856.313.636.515 1.34.606 2.07h-1.992c-.091-.73-.293-1.434-.606-2.07C16.136 15.165 14.249 13.5 10.5 13.5S6.364 15.165 5.686 16.356c-.313.636-.515 1.34-.606 2.07H5.07z"></path></svg>
+                </div>
+            </div>
+        </div>
+
+        {# Overdue Loans #}
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow border border-gray-200 dark:border-gray-700 transition-shadow hover:shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Overdue Loans</p>
+                    <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100" x-text="stats.overdueLoans"></p>
+                </div>
+                <div class="bg-red-100 dark:bg-red-900/30 p-2.5 rounded-lg text-red-600 dark:text-red-400 flex-shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+            </div>
+        </div>
+
+        {# Active Loans #}
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow border border-gray-200 dark:border-gray-700 transition-shadow hover:shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Active Loans</p>
+                    <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100" x-text="stats.activeLoans"></p>
+                </div>
+                <div class="bg-blue-100 dark:bg-blue-900/30 p-2.5 rounded-lg text-blue-600 dark:text-blue-400 flex-shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+            </div>
+        </div>
+
+        {# Fully Paid Loans #}
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow border border-gray-200 dark:border-gray-700 transition-shadow hover:shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Fully Paid Loans</p>
+                    <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100" x-text="stats.fullyPaidLoans"></p>
+                </div>
+                <div class="bg-teal-100 dark:bg-teal-900/30 p-2.5 rounded-lg text-teal-600 dark:text-teal-400 flex-shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <!-- New Loan -->
+            <button @click="openModal('newLoan')" class="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg
+                   font-medium text-sm shadow-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2
+                   focus:ring-indigo-500 dark:focus:ring-offset-gray-900">
+            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            New Loan
+          </button>
+
+            <!-- Record Repayment -->
+            <button @click="openModal('recordRepayment')" class="inline-flex items-center justify-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600
+                   text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600
+                   transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900">
+            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 7h6m-3 3v6m-2-3H8m8 0h2m-1 12H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v8m-2 0l2 2m-2-2l-2-2m2 2l-2 2m-2-2l2-2" />
+            </svg>
+            Record Repayment
+          </button>
+        </div>
+
+        <!-- Search Input -->
+        <div class="w-full sm:w-64 relative">
+            <label for="search-loans" class="sr-only">Search loans</label>
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                    d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                    clip-rule="evenodd" />
+            </svg>
+            </div>
+            <input type="search" id="search-loans" x-model.debounce.300ms="searchTerm" @input="fetchData" placeholder="Search loans or members..." class="block w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700
+                   text-gray-900 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500
+                   focus:border-indigo-500 dark:focus:ring-indigo-600 dark:focus:border-indigo-600 transition" />
+        </div>
+    </div>
+
+    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+        <!-- Tabs -->
+        <nav class="flex space-x-8 text-sm font-medium overflow-x-auto" aria-label="Tabs">
+            <button @click="activeTab = 'loans'; resetPagination();" :class="activeTab === 'loans'
+              ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+              : 'border-b-2 border-transparent text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100'" class="pb-2 transition-colors whitespace-nowrap">
+            Loans
+            <span
+              x-text="`(${filteredLoans.length})`"
+              class="ml-2 inline-block px-2 py-0.5 rounded-full text-xs font-semibold"
+              :class="activeTab === 'loans'
+                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
+            ></span>
+          </button>
+
+            <button @click="activeTab = 'repayments'; resetPagination();" :class="activeTab === 'repayments'
+              ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+              : 'border-b-2 border-transparent text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100'" class="pb-2 transition-colors whitespace-nowrap">
+            Repayments
+            <span
+              x-text="`(${filteredRepayments.length})`"
+              class="ml-2 inline-block px-2 py-0.5 rounded-full text-xs font-semibold"
+              :class="activeTab === 'repayments'
+                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
+            ></span>
+          </button>
+        </nav>
+
+        <!-- Export Buttons -->
+        <div class="flex space-x-3">
+            <!-- Excel Export -->
+            <button @click="exportData('excel')" :disabled="isExporting" class="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700
+                   text-white text-sm font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 transition
+                   disabled:opacity-50 disabled:cursor-not-allowed">
+            <!-- Table Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            <span>Export Excel</span>
+          </button>
+
+            <!-- PDF Export -->
+            <button @click="exportData('pdf')" :disabled="isExporting" class="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-red-400 to-red-600 hover:from-red-500 hover:to-red-700
+                   text-white text-sm font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 transition
+                   disabled:opacity-50 disabled:cursor-not-allowed">
+            <!-- Document Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 7h10M7 11h6m-6 4h4M5 3h14a2 2 0 012 2v14a2 2 0
+                   01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
+            </svg>
+            <span>Export PDF</span>
+          </button>
+        </div>
+    </div>
+
+
+    <div x-show="activeTab === 'loans'" x-transition class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                        <th @click="sortBy('member')" …>Member<span x-show="sortColumn==='member'" x-text="sortDirection==='asc'?'▲':'▼'"></span></th>
+                        <th @click="sortBy('amount')" …>Amount<span x-show="sortColumn==='amount'" x-text="sortDirection==='asc'?'▲':'▼'"></span></th>
+                        <th>Status</th>
+                        <th @click="sortBy('due_date')" …>Due Date<span x-show="sortColumn==='due_date'" x-text="sortDirection==='asc'?'▲':'▼'"></span></th>
+                        <th @click="sortBy('balance')" …>Balance<span x-show="sortColumn==='balance'" x-text="sortDirection==='asc'?'▲':'▼'"></span></th>
+                        <th>Chama</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+
+                    <template x-if="paginatedLoans.length === 0">
+                      <tr>
+                        <td colspan="7"
+                            class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                          No loans found matching your criteria.
+                        </td>
+                      </tr>
+                    </template>
+
+                    <template x-for="loan in paginatedLoans" :key="loan.id">
+                      <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td class="px-6 py-4" x-text="loan.member"></td>
+                        <td class="px-6 py-4" x-text="formatCurrency(loan.amount)"></td>
+                        <td class="px-6 py-4">
+                          <span :class="statusBadgeClass(loan.status)"
+                                class="px-2.5 py-0.5 inline-flex text-xs font-semibold rounded-full"
+                                x-text="loan.status"></span>
+                        </td>
+                        <td class="px-6 py-4" x-text="formatDate(loan.due_date)"></td>
+                        <td class="px-6 py-4" x-text="formatCurrency(loan.balance)"></td>
+                        <td class="px-6 py-4" x-text="loan.chamaName"></td>
+                        <td class="px-6 py-4 text-center space-x-3">
+                          <button @click="openModal('recordRepayment', loan)">Record</button>
+                          <button @click="openModal('editLoan',       loan)">Edit</button>
+                        </td>
+                      </tr>
+                    </template>
+                </tbody>
+
+            </table>
+        </div>
+
+        <div x-show="totalPages('loans') > 1" class="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
+            {% with pagination_items=filteredLoans, current_page=currentPage, items_per_page=itemsPerPage, type='loans' %} {% include 'dashboard_chama_admin/pagination.html' %} {% endwith %}
+        </div>
+    </div>
+
+
+    <div x-show="activeTab === 'repayments'" x-transition> {# Use x-show on a div wrapper #}
+
+        <template x-if="filteredLoansWithRepayments.length === 0"> {# This template is now inside the div #}
+             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden p-6 text-center text-gray-500 dark:text-gray-400">
+                No repayments found matching your criteria.
+            </div>
+        </template>
+
+        <template x-if="filteredLoansWithRepayments.length > 0"> {# This template is also inside the div #}
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden p-4 space-y-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400">Click on a loan to view its repayment history.</p>
+                <div class="space-y-3">
+                    <template x-for="loan in filteredLoansWithRepayments" :key="'loan-' + loan.id">
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                            <div @click="toggleLoan(loan.id)"
+                                 class="p-4 bg-gray-50 dark:bg-gray-900/50 cursor-pointer flex justify-between items-center hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
+                                <div>
+                                    <h3 class="font-semibold text-gray-900 dark:text-gray-100" x-text="loan.member + ' (Loan ID: ' + loan.id + ')'"></h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                                         <span x-text="'Amount: ' + formatCurrency(loan.amount)"></span>
+                                         <span class="ml-4" x-text="'Balance: ' + formatCurrency(loan.balance)"></span>
+                                         <span class="ml-4" x-text="'Chama: ' + loan.chamaName"></span>
+                                    </p>
+                                </div>
+                                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 transform transition-transform duration-200" :class="{ 'rotate-180': expandedLoans.includes(loan.id) }"
+                                     fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                            <div x-show="expandedLoans.includes(loan.id)"
+                                 x-transition:enter="transition ease-out duration-300"
+                                 x-transition:enter-start="opacity-0 transform -translate-y-2"
+                                 x-transition:enter-end="opacity-100 transform translate-y-0"
+                                 x-transition:leave="transition ease-in duration-200"
+                                 x-transition:leave-start="opacity-100 transform translate-y-0"
+                                 x-transition:leave-end="opacity-0 transform -translate-y-2"
+                                 class="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                                 <template x-if="loan.repayments && loan.repayments.length > 0">
+                                    <div class="space-y-2"> {# Container for repayments with spacing #}
+                                        <template x-for="repayment in loan.repayments" :key="'repayment-' + repayment.id">
+                                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between py-2 px-4 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border border-gray-100 dark:border-gray-700/50">
+                                                <div>
+                                                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                       <span x-text="formatCurrency(repayment.amount)"></span> paid on <span x-text="formatDate(repayment.payment_date)"></span>
+                                                    </p>
+                                                    <p class="text-xs text-gray-600 dark:text-gray-400" x-text="'Method: ' + repayment.method"></p>
+                                                    {# Optional: Add Reference/Notes fields for repayment #}
+                                                </div>
+                                                <div class="flex space-x-3 mt-2 sm:mt-0"> {# Buttons #}
+                                                     <button @click.stop="openModal('editRepayment', repayment)" class="text-sm text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors">Edit</button>
+                                                     <button @click.stop="openModal('deleteConfirmation', { type: 'repayment', item: repayment })" class="text-sm text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors">Delete</button>
+                                                </div>
+                                            </div>
+                                        </template>
+    </div> {# End space-y-2 for repayments #}
+    </template>
+    <template x-if="!loan.repayments || loan.repayments.length === 0">
+                                    <div class="text-sm text-gray-500 dark:text-gray-400 p-4 text-center">
+                                         No repayments recorded for this loan yet.
+                                    </div>
+                                </template>
+</div> {# End x-show expandedLoans #}
+</div> {# End border loan item #}
+</template> {# End loop for filteredLoansWithRepayments #}
+</div> {# End space-y-3 for loan items #} {# Pagination for Repayments Tree? Less common, usually paginate the parent loans #}
+</div> {# End bg-white for Repayments Tree #}
+</template>
+</div>
+<div x-show="modals.newLoan" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="transition ease-in duration-200"
+    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 transition-opacity"
+    x-cloak>
+    <div class="flex items-center justify-center min-h-screen px-4 py-6 sm:p-0">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl transform transition-all sm:max-w-lg sm:w-full my-8" @click.away="closeModal('newLoan')">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-gray-100">New Loan Application</h3>
+            </div>
+            <form @submit.prevent="submitNewLoan">
+                <div class="p-6 space-y-4">
+                    {# Error message display for modal #}
+                    <div x-show="modalError" x-cloak class="p-3 bg-red-100 text-red-700 border border-red-200 rounded-md dark:bg-red-900/30 dark:text-red-300 dark:border-red-700" x-text="modalError"></div>
+
+                    {# Chama Select - Add @change listener #}
+                    <div>
+                        <label for="new-loan-chama" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Chama</label>
+                        <select id="new-loan-chama" x-model="newLoanData.chamaId" @change="fetchChamaMembers" required class="mt-1 block w-full form-input">
+                                 <option value="">Select Chama</option>
+                                 <template x-for="chama in chamas" :key="chama.id">
+                                     <option :value="chama.id" x-text="chama.name"></option>
+                                 </template>
+                             </select>
+                    </div>
+
+                    {# Member Select - Populate based on chamaMembers #}
+                    <div>
+                        <label for="new-loan-member" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Member</label>
+                        <div x-if="isLoadingMembers" class="mt-1 text-sm text-gray-500 dark:text-gray-400">Loading members...</div>
+                        <select id="new-loan-member" x-model="newLoanData.userId" required :disabled="!newLoanData.chamaId || isLoadingMembers" class="mt-1 block w-full form-input" :class="{'cursor-not-allowed opacity-50': !newLoanData.chamaId || isLoadingMembers}"> {# Disable if no chama selected or loading #}
+                                 <option value="">Select Member</option>
+                                 <template x-for="member in chamaMembers" :key="member.id">
+                                     <option :value="member.id" x-text="member.full_name"></option>
+                                 </template>
+                             </select>
+                    </div>
+
+                    {# Example: Amount #}
+                    <div>
+                        <label for="new-loan-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount (KES)</label>
+                        <input type="number" id="new-loan-amount" x-model.number="newLoanData.amount" placeholder="e.g., 5000" required min="0" step="any" class="mt-1 block w-full form-input">
+                    </div>
+
+                    {# Example: Repayment Period #}
+                    <div>
+                        <label for="new-loan-repayment-period" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Repayment Period (Months)</label>
+                        <input type="number" id="new-loan-repayment-period" x-model.number="newLoanData.repayment_period" placeholder="e.g., 6" required min="1" step="1" class="mt-1 block w-full form-input">
+                    </div>
+
+                    {# Example: Due Date (Can be calculated later, or set manually) #}
+                    <div>
+                        <label for="new-loan-due-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Due Date</label> {# Consider if due_date should be auto-calculated based on period and issued_date #}
+                        <input type="date" id="new-loan-due-date" x-model="newLoanData.due_date" required class="mt-1 block w-full form-input">
+                    </div>
+
+                    {# Example: Interest Rate #}
+                    <div>
+                        <label for="new-loan-interest-rate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Interest Rate (%)</label>
+                        <input type="number" id="new-loan-interest-rate" x-model.number="newLoanData.interestRate" placeholder="e.g., 10" min="0" step="0.01" class="mt-1 block w-full form-input">
+                    </div>
+
+                    {# Example: Purpose #}
+                    <div>
+                        <label for="new-loan-purpose" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Purpose (Optional)</label>
+                        <textarea id="new-loan-purpose" x-model="newLoanData.purpose" rows="2" class="mt-1 block w-full form-input" placeholder="Briefly describe the loan purpose..."></textarea>
+                    </div>
+
+                    {# Note: Issued Date defaults to backend timestamp #}
+
+
+                    <div class="p-3 bg-blue-100 text-blue-700 border border-blue-200 rounded-md dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700">
+                        Other New Loan form fields go here...
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" @click="closeModal('newLoan')" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary" :disabled="!newLoanData.chamaId || !newLoanData.userId || newLoanData.amount <= 0">Submit Application</button> {# Disable submit until required fields are filled #}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# ... rest of your HTML including other modals ... #}
+
+
+<div x-show="modals.recordRepayment" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="transition ease-in duration-200"
+    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 transition-opacity"
+    x-cloak>
+    <div class="flex items-center justify-center min-h-screen px-4 py-6 sm:p-0">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl transform transition-all sm:max-w-md sm:w-full my-8" @click.away="closeModal('recordRepayment')">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-gray-100">Record Loan Repayment</h3>
+            </div>
+            <form @submit.prevent="submitRepayment">
+                <div class="p-6 space-y-4">
+                    {# Error message display for modal #}
+                    <div x-show="modalError" x-cloak class="p-3 bg-red-100 text-red-700 border border-red-200 rounded-md dark:bg-red-900/30 dark:text-red-300 dark:border-red-700" x-text="modalError"></div>
+
+
+                    <div x-if="selectedLoan"> {# Display loan info if a loan is pre-selected (from table row) #}
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Repaying Loan for</label>
+                        <p class="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100" x-text="selectedLoan.member + ' (Loan ID: ' + selectedLoan.id + ')'"></p>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mt-2">Remaining Balance</label>
+                        <p class="mt-1 text-xl font-semibold text-primary-600 dark:text-primary-400" x-text="formatCurrency(selectedLoan.balance)"></p>
+                    </div>
+                    <div x-if="!selectedLoan"> {# Show loan selection if opened from action bar button #}
+                        <div>
+                            <label for="repayment-loan-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Select Loan</label> {# You might need a better way to load/filter loans here if the full list is too large #}
+                            <select id="repayment-loan-select" x-model="repaymentData.loanId" required class="mt-1 block w-full form-input">
+                                    <option value="">Choose Loan</option>
+                                     <template x-for="loan in loans" :key="loan.id"> {# Use all fetched loans here #}
+                                        <option :value="loan.id" x-text="loan.member + ' (Amount: ' + formatCurrency(loan.amount) + ', Balance: ' + formatCurrency(loan.balance) + ')'"></option>
+                                    </template>
+                                </select>
+                        </div>
+                    </div>
+
+                    {# Repayment Form Fields #}
+                    <div>
+                        <label for="repayment-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount Paid (KES)</label>
+                        <input type="number" id="repayment-amount" x-model.number="repaymentData.amount" placeholder="e.g., 2500" required min="0" step="any" class="mt-1 block w-full form-input">
+                    </div>
+                    <div>
+                        <label for="repayment-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date Paid</label>
+                        <input type="date" id="repayment-date" x-model="repaymentData.date" required class="mt-1 block w-full form-input">
+                    </div>
+                    <div>
+                        <label for="repayment-method" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Method</label>
+                        <select id="repayment-method" x-model="repaymentData.method" required class="mt-1 block w-full form-input">
+                                <option value="">Select Method</option>
+                                <option value="M-Pesa">M-Pesa</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Cash">Cash</option>
+                                <option value="Other">Other</option>
+                            </select>
+                    </div>
+                    {# Optional: Add Reference/Notes fields #}
+                    <div>
+                        <label for="repayment-reference" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Reference (Optional)</label>
+                        <input type="text" id="repayment-reference" x-model="repaymentData.reference" class="mt-1 block w-full form-input">
+                    </div>
+                    <div>
+                        <label for="repayment-notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes (Optional)</label>
+                        <textarea id="repayment-notes" x-model="repaymentData.notes" rows="2" class="mt-1 block w-full form-input"></textarea>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" @click="closeModal('recordRepayment')" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Record Repayment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div x-show="modals.editLoan" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="transition ease-in duration-200"
+    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 transition-opacity"
+    x-cloak>
+    <div class="flex items-center justify-center min-h-screen px-4 py-6 sm:p-0">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl transform transition-all sm:max-w-lg sm:w-full my-8" @click.away="closeModal('editLoan')">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-gray-100">Edit Loan</h3>
+            </div>
+            <form @submit.prevent="submitEditLoan"> {# Assume submitEditLoan method #}
+                <div class="p-6 space-y-4">
+                    <div x-show="modalError" x-cloak class="p-3 bg-red-100 text-red-700 border border-red-200 rounded-md dark:bg-red-900/30 dark:text-red-300 dark:border-red-700" x-text="modalError"></div>
+                    {# Edit Loan Form Fields Here - Populate from selectedLoan #}
+                    <div x-if="selectedLoan">
+                        <div>
+                            <label for="edit-loan-member" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Member</label>
+                            <input type="text" id="edit-loan-member" :value="selectedLoan.member" disabled class="mt-1 block w-full form-input cursor-not-allowed bg-gray-100 dark:bg-gray-700"> {# Member is usually not editable #}
+                        </div>
+                        {# Example: Amount #}
+                        <div>
+                            <label for="edit-loan-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount (KES)</label>
+                            <input type="number" id="edit-loan-amount" x-model.number="selectedLoan.amount" required min="0" step="any" class="mt-1 block w-full form-input">
+                        </div>
+                        {# Add other fields you want to be editable: status, due_date, etc. #}
+                        <div>
+                            <label for="edit-loan-status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                            <select id="edit-loan-status" x-model="selectedLoan.status" required class="mt-1 block w-full form-input">
+                                     <option value="Pending">Pending</option>
+                                     <option value="Active">Active</option>
+                                     <option value="Overdue">Overdue</option>
+                                     <option value="Paid">Paid</option>
+                                 </select>
+                        </div>
+                        <div>
+                            <label for="edit-loan-due-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Due Date</label>
+                            <input type="date" id="edit-loan-due-date" x-model="selectedLoan.due_date" class="mt-1 block w-full form-input"> {# Make due_date editable #}
+                        </div>
+
+                        <div class="p-3 bg-blue-100 text-blue-700 border border-blue-200 rounded-md dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700">
+                            Other Edit Loan form fields go here...
+                        </div>
+                    </div>
+                    <div x-if="!selectedLoan" class="text-gray-500 dark:text-gray-400">
+                        Select a loan to edit.
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" @click="closeModal('editLoan')" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary" :disabled="!selectedLoan">Save Changes</button> {# Disable if no loan selected #}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# Delete Confirmation Modal (Placeholder) #}
+<div x-show="modals.deleteConfirmation" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="transition ease-in duration-200"
+    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 transition-opacity"
+    x-cloak>
+    <div class="flex items-center justify-center min-h-screen px-4 py-6 sm:p-0">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl transform transition-all sm:max-w-sm sm:w-full my-8" @click.away="closeModal('deleteConfirmation')">
+            <div class="px-6 py-4">
+                <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-gray-100">Confirm Deletion</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div x-show="modalError" x-cloak class="p-3 bg-red-100 text-red-700 border border-red-200 rounded-md dark:bg-red-900/30 dark:text-red-300 dark:border-red-700" x-text="modalError"></div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Are you sure you want to delete this <span class="font-medium" x-text="selectedItemToDelete ? selectedItemToDelete.type : ''"></span>? This action cannot be undone.
+                </p>
+                {# Display item details if available #}
+                <div x-if="selectedItemToDelete && selectedItemToDelete.item" class="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-sm text-gray-700 dark:text-gray-300 break-words">
+                    <template x-if="selectedItemToDelete.type === 'loan'">
+                                <div>Loan ID: <span x-text="selectedItemToDelete.item.id"></span></div>
+                                <div>Member: <span x-text="selectedItemToDelete.item.member"></span></div>
+                                <div>Amount: <span x-text="formatCurrency(selectedItemToDelete.item.amount)"></span></div>
+                            </template>
+                    <template x-if="selectedItemToDelete.type === 'repayment'">
+                                <div>Repayment ID: <span x-text="selectedItemToDelete.item.id"></span></div>
+                                <div>Amount: <span x-text="formatCurrency(selectedItemToDelete.item.amount)"></span></div>
+                                <div>Date: <span x-text="formatDate(selectedItemToDelete.item.payment_date)"></span></div>
+                            </template>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700">
+                <button type="button" @click="closeModal('deleteConfirmation')" class="btn-secondary">Cancel</button>
+                <button type="button" @click="deleteItem(selectedItemToDelete)" class="btn-danger">Delete</button> {# Assume btn-danger is defined #}
+            </div>
+        </div>
+    </div>
+</div>
+
+
+</div> {# End px-4... div #}
+
+<script>
+    function loansManager() {
+        return {
+            // State
+            selectedChama: 'all',
+            searchTerm: '',
+            activeTab: 'loans', // 'loans' or 'repayments'
+            currentPage: 1,
+            itemsPerPage: 10, // Adjust as needed
+            sortColumn: 'due_date', // Default sort column for loans
+            sortDirection: 'asc', // Default sort direction
+            expandedLoans: [], // For the repayment tree view
+            modals: {
+                newLoan: false,
+                recordRepayment: false,
+                editLoan: false,
+                deleteConfirmation: false
+            },
+            // Separate error for modals vs page
+            error: null, // Page level error
+            modalError: null, // Modal level error
+
+
+            stats: {
+                totalLoans: 0,
+                totalAmountLent: 0,
+                totalOutstandingBalance: 0,
+                overdueLoans: 0,
+                activeLoans: 0,
+                fullyPaidLoans: 0
+            },
+            loans: [], // Main source of loan data (ideally including nested repayments)
+            chamas: [],
+            selectedLoan: null, // Used by recordRepayment and editLoan modals
+            // Add state for members dropdown in New Loan modal
+            chamaMembers: [],
+            isLoadingMembers: false, // To show a loading state
+            // Form data for modals
+            newLoanData: { // State for new loan application form
+                chamaId: '',
+                userId: '', // Need user selection
+                amount: '',
+                interestRate: '', // Example field
+                terms: '', // Example field (e.g., "6 months")
+                purpose: '', // Example field
+                applicationDate: new Date().toISOString().split('T')[0], // Default to today
+            },
+            repaymentData: { // State for record repayment form
+                loanId: null,
+                amount: '',
+                date: new Date().toISOString().split('T')[0], // Default to today's date
+                method: '',
+                reference: '', // Optional
+                notes: '', // Optional
+            },
+            // editLoanData: {}, // Could create a separate object for edit form to avoid modifying loans directly before saving
+
+
+            selectedItemToDelete: null, // For the delete confirmation modal
+
+            // Computed Properties (Filtered/Sorted/Paginated Data)
+            get filteredLoans() {
+                let filtered = this.loans;
+                if (this.selectedChama !== 'all') {
+                    const chamaIdInt = parseInt(this.selectedChama);
+                    if (!isNaN(chamaIdInt)) {
+                        filtered = filtered.filter(loan => loan.chamaId === chamaIdInt);
+                    }
+                }
+                if (this.searchTerm) {
+                    const lowerSearch = this.searchTerm.toLowerCase();
+                    filtered = filtered.filter(loan =>
+                        loan.member.toLowerCase().includes(lowerSearch) ||
+                        loan.status.toLowerCase().includes(lowerSearch) ||
+                        (loan.chamaName && loan.chamaName.toLowerCase().includes(lowerSearch)) || // Search chama name
+                        (loan.id && loan.id.toString().includes(lowerSearch)) || // Search by loan ID
+                        (loan.amount && loan.amount.toString().includes(lowerSearch.replace(/,/g, ''))) || // Search by amount (remove commas)
+                        (loan.balance && loan.balance.toString().includes(lowerSearch.replace(/,/g, ''))) // Search by balance (remove commas)
+                        // Add other searchable fields
+                    );
+                }
+                // Apply sorting BEFORE pagination
+                if (this.sortColumn) {
+                    filtered = filtered.sort((a, b) => {
+                        const aValue = a[this.sortColumn];
+                        const bValue = b[this.sortColumn];
+
+                        // Handle sorting for different data types (strings, numbers, dates)
+                        if (typeof aValue === 'string' && typeof bValue === 'string') {
+                            return this.sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+                        } else if (aValue < bValue) {
+                            return this.sortDirection === 'asc' ? -1 : 1;
+                        } else if (aValue > bValue) {
+                            return this.sortDirection === 'asc' ? 1 : -1;
+                        }
+                        return 0;
+                    });
+                }
+                // Reset currentPage if filters change significantly (handled implicitly by pagination logic)
+
+                return filtered;
+            },
+
+            // Filtered loans specifically for the Repayments Tree (no pagination/sorting here)
+            get filteredLoansWithRepayments() {
+                // Apply the same filtering as filteredLoans, but without pagination/sorting
+                let filtered = this.loans;
+                if (this.selectedChama !== 'all') {
+                    const chamaIdInt = parseInt(this.selectedChama);
+                    if (!isNaN(chamaIdInt)) {
+                        filtered = filtered.filter(loan => loan.chamaId === chamaIdInt);
+                    }
+                }
+                if (this.searchTerm) {
+                    const lowerSearch = this.searchTerm.toLowerCase();
+                    filtered = filtered.filter(loan =>
+                        loan.member.toLowerCase().includes(lowerSearch) ||
+                        loan.status.toLowerCase().includes(lowerSearch) ||
+                        (loan.chamaName && loan.chamaName.toLowerCase().includes(lowerSearch)) ||
+                        (loan.id && loan.id.toString().includes(lowerSearch)) ||
+                        (loan.amount && loan.amount.toString().includes(lowerSearch.replace(/,/g, ''))) ||
+                        (loan.balance && loan.balance.toString().includes(lowerSearch.replace(/,/g, '')))
+                        // Add other searchable fields
+                    );
+                }
+                // Ensure loans have a 'repayments' array, even if empty
+                filtered = filtered.map(loan => ({
+                    ...loan,
+                    repayments: loan.repayments || [] // Ensure repayments is an array
+                }));
+
+                // Optional: Filter loans in the tree view that have no repayments if desired
+                // filtered = filtered.filter(loan => loan.repayments.length > 0);
+
+                return filtered;
+            },
+            // if you also need a flat list of all repayments:
+            get filteredRepayments() {
+                return this.loans
+                    .flatMap(loan => loan.repayments.map(r => ({
+                        ...r,
+                        loanId: loan.id,
+                        member: loan.member,
+                        chama: loan.chamaName
+                    })))
+                    // optionally filter/search/sort here…
+            },
+
+            get paginatedLoans() {
+                const start = (this.currentPage - 1) * this.itemsPerPage;
+                const end = start + this.itemsPerPage;
+                return this.filteredLoans.slice(start, end);
+            },
+
+            // Pagination computation - total pages (used by the pagination include)
+            totalPages(dataType) {
+                // Note: Pagination include is currently only used for 'loans' tab
+                const dataToPaginate = this.filteredLoans;
+                return Math.ceil(dataToPaginate.length / this.itemsPerPage);
+            },
+
+            // Pagination computation - start index (used by the pagination include)
+            paginationStart(dataType) {
+                const dataToPaginate = this.filteredLoans;
+                if (dataToPaginate.length === 0) return 0;
+                return (this.currentPage - 1) * this.itemsPerPage + 1;
+            },
+
+            // Pagination computation - end index (used by the pagination include)
+            paginationEnd(dataType) {
+                const dataToPaginate = this.filteredLoans;
+                const end = this.currentPage * this.itemsPerPage;
+                return Math.min(end, dataToPaginate.length);
+            },
+
+
+            // Methods
+            init() {
+                this.fetchChamas();
+                this.fetchData(); // Initial fetch
+            },
+            // Add method to fetch members for a specific chama
+            async fetchChamaMembers() {
+                const chamaId = this.newLoanData.chamaId;
+                this.chamaMembers = []; // Clear previous members
+                this.newLoanData.userId = ''; // Reset selected user
+                this.modalError = null; // Clear modal error
+
+                if (!chamaId) {
+                    // No chama selected, no members to fetch
+                    return;
+                }
+
+                this.isLoadingMembers = true; // Show loading indicator
+
+                try {
+                    // Use the backend endpoint we defined: /api/loans/chamas/<chama_id>/members
+                    const response = await fetch(`/api/loans/chamas/${chamaId}/members`);
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({
+                            message: 'Failed to fetch chama members.'
+                        }));
+                        throw new Error(errorData.message);
+                    }
+
+                    this.chamaMembers = await response.json();
+                    // console.log(`Members for Chama ${chamaId} fetched:`, this.chamaMembers);
+
+                } catch (error) {
+                    console.error(`Error fetching members for chama ${chamaId}:`, error);
+                    this.modalError = `Failed to load members: ${error.message}`; // Display error in modal
+                    this.chamaMembers = []; // Clear members on error
+                } finally {
+                    this.isLoadingMembers = false; // Hide loading indicator
+                }
+            },
+
+            async fetchChamas() {
+                try {
+                    // console.log('Fetching chamas...');
+                    const response = await fetch('/chama-admin/api/chamas'); // Adjust endpoint if necessary
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({
+                            message: 'Failed to fetch chamas.'
+                        }));
+                        throw new Error(errorData.message);
+                    }
+                    this.chamas = await response.json();
+                    // console.log('Chamas fetched:', this.chamas);
+                } catch (error) {
+                    console.error('Error fetching chamas:', error);
+                    this.error = error.message;
+                    this.chamas = []; // Clear data on error
+                }
+            },
+
+            async fetchData() { // Central function to fetch based on current filters
+                // console.log('Fetching data...');
+                this.error = null; // Clear page-level error
+                // You might add a loading state here
+
+                try {
+                    // Example endpoint - adjust to match your backend
+                    // This endpoint should ideally return loans filtered by chamaId and searchTerm,
+                    // and include their nested repayments.
+                    const response = await fetch(`/api/loans?chama=${this.selectedChama}&q=${this.searchTerm}`);
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({
+                            message: 'Failed to fetch data.'
+                        }));
+                        throw new Error(errorData.message);
+                    }
+                    const data = await response.json();
+                    // Ensure data structure is as expected, with loans having a 'repayments' array
+                    this.loans = data.map(loan => ({
+                        ...loan,
+                        repayments: loan.repayments || [] // Ensure repayments key exists and is an array
+                    }));
+                    // console.log('Data fetched:', this.loans);
+                    this.updateStats(); // Update stats after fetching data
+                    this.currentPage = 1; // Reset to first page after new data fetch
+
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                    this.error = error.message; // Display error to user
+                    this.loans = []; // Clear data on error
+                    this.updateStats(); // Update stats with empty data
+                    this.currentPage = 1; // Reset page
+                } finally {
+                    // Hide loading state here
+                }
+            },
+
+
+            updateStats() {
+                // Calculate total amount lent and total outstanding balance from current loans data
+                const totalAmountLent = this.loans.reduce((sum, loan) => sum + (loan.amount || 0), 0); // Handle potential null/undefined amounts
+                const totalOutstandingBalance = this.loans.reduce((sum, loan) => sum + (loan.balance || 0), 0); // Handle potential null/undefined balances
+
+                // Ensure status strings match exactly what your backend returns ('Overdue', 'Active', 'Pending', 'Paid')
+                this.stats = {
+                    totalLoans: this.loans.length,
+                    totalAmountLent: totalAmountLent,
+                    totalOutstandingBalance: totalOutstandingBalance,
+                    overdueLoans: this.loans.filter(loan => loan.status === 'Overdue').length,
+                    activeLoans: this.loans.filter(loan => ['Active', 'Pending'].includes(loan.status)).length,
+                    fullyPaidLoans: this.loans.filter(loan => loan.status === 'Paid').length
+                };
+                // console.log('Stats updated:', this.stats);
+            },
+
+            openModal(modalName, item = null) {
+                this.modalError = null; // Clear modal-level error
+
+                // Reset modal form data based on modalName
+                if (modalName === 'newLoan') {
+                    // Reset New Loan form fields
+                    this.newLoanData = {
+                        // Pre-select chama if one is already selected, otherwise empty
+                        chamaId: this.selectedChama !== 'all' ? this.selectedChama : '',
+                        userId: '', // Ensure userId is reset
+                        amount: '',
+                        interestRate: '',
+                        terms: '',
+                        purpose: '',
+                        applicationDate: new Date().toISOString().split('T')[0],
+                    };
+                    this.chamaMembers = []; // Clear members list
+                    this.isLoadingMembers = false; // Reset loading state
+
+                    // If a chama was pre-selected, fetch its members immediately
+                    if (this.newLoanData.chamaId) {
+                        this.fetchChamaMembers();
+                    }
+                    // You would typically fetch members for the pre-selected chama here
+                } else if (modalName === 'recordRepayment') {
+                    this.selectedLoan = item; // Set the selected loan if passed from a row click
+                    // Reset repayment form data
+                    this.repaymentData = {
+                        loanId: item ? item.id : null, // Pre-fill loanId if item is passed
+                        amount: '',
+                        date: new Date().toISOString().split('T')[0], // Default to today's date in YYYY-MM-DD format
+                        method: '',
+                        reference: '',
+                        notes: '',
+                    };
+                    // If item is null, the modal will show the loan selection dropdown
+                } else if (modalName === 'editLoan') {
+                    this.selectedLoan = item; // Set the loan to edit
+                    // Populate edit loan form with data from selectedLoan
+                    // A deeper copy might be needed if you don't want changes in modal reflecting on table before save
+                    // For simplicity, directly binding to selectedLoan for now
+                    // Ensure date format is YYYY-MM-DD for input type="date"
+                    if (this.selectedLoan && this.selectedLoan.due_date) {
+                        try {
+                            const dateObj = new Date(this.selectedLoan.due_date);
+                            if (!isNaN(dateObj)) {
+                                this.selectedLoan.due_date = dateObj.toISOString().split('T')[0];
+                            }
+                        } catch (e) {
+                            console.error('Error parsing date for edit modal:', e);
+                            // Keep original string or set to null if invalid format
+                        }
+                    }
+
+                } else if (modalName === 'deleteConfirmation') {
+                    this.selectedItemToDelete = item; // item should be { type: 'loan'/'repayment', item: actual_object }
+                }
+                this.modals[modalName] = true;
+            },
+
+            closeModal(modalName) {
+                this.modals[modalName] = false;
+                this.modalError = null; // Clear modal error when closing
+
+                // Clear selected items/form data when closing
+                if (modalName === 'recordRepayment') {
+                    this.selectedLoan = null; // Clear selected loan
+                    this.repaymentData = {
+                        loanId: null,
+                        amount: '',
+                        date: new Date().toISOString().split('T')[0],
+                        method: '',
+                        reference: '',
+                        notes: ''
+                    };
+                } else if (modalName === 'editLoan') {
+                    this.selectedLoan = null; // Clear selected loan (careful if using two-way binding directly)
+                    // Clear edit form data if separate
+                } else if (modalName === 'deleteConfirmation') {
+                    this.selectedItemToDelete = null; // Clear item to delete
+                }
+            },
+
+            async submitNewLoan() {
+                this.modalError = null; // Clear modal error
+                console.log('Submitting New Loan:', this.newLoanData);
+                // Add backend API call to submit new loan application
+                try {
+                    // Example API call (POST to /api/loans)
+                    const response = await fetch('/api/loans', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(this.newLoanData)
+                    });
+
+                    const result = await response.json(); // Assuming backend returns JSON
+
+                    if (!response.ok) {
+                        // Backend returned an error (e.g., 400, 409)
+                        this.modalError = result.message || 'Failed to submit loan application.';
+                        console.error('Backend error submitting loan:', result);
+                        return; // Stop here if backend error
+                    }
+
+                    // Assuming success response returns the new loan or confirmation
+                    console.log('Loan application submitted successfully.', result);
+                    this.closeModal('newLoan'); // Close modal on success
+                    this.fetchData(); // Refresh data
+                    // Optionally show a success notification
+
+                } catch (error) {
+                    console.error('Frontend error submitting loan application:', error);
+                    this.modalError = error.message || 'An unexpected error occurred.'; // Display error to user
+                }
+            },
+
+            async submitRepayment() {
+                this.modalError = null; // Clear modal error
+                console.log('Submitting Repayment:', this.repaymentData);
+                // Add backend API call to record repayment
+                // Make sure repaymentData.loanId is set (either from row click or modal dropdown)
+                if (!this.repaymentData.loanId) {
+                    this.modalError = "Please select a loan for the repayment.";
+                    return;
+                }
+                if (this.repaymentData.amount <= 0 || isNaN(this.repaymentData.amount)) {
+                    this.modalError = "Please enter a valid repayment amount.";
+                    return;
+                }
+                if (!this.repaymentData.date) {
+                    this.modalError = "Please enter the payment date.";
+                    return;
+                }
+                if (!this.repaymentData.method) {
+                    this.modalError = "Please select a payment method.";
+                    return;
+                }
+
+
+                try {
+                    // Example API call (POST to /api/repayments)
+                    const response = await fetch('/api/loans/repayments', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(this.repaymentData) // Send repayment details
+                    });
+
+                    const result = await response.json(); // Assuming backend returns JSON
+
+                    if (!response.ok) {
+                        // Backend returned an error (e.g., 400, 409, 404 if loan not found)
+                        this.modalError = result.message || 'Failed to record repayment.';
+                        console.error('Backend error recording repayment:', result);
+                        return; // Stop here if backend error
+                    }
+
+                    // Assuming success response
+                    console.log('Repayment recorded successfully.', result);
+                    this.closeModal('recordRepayment'); // Close modal on success
+                    this.fetchData(); // Refresh data to update balances and repayment lists
+                    // Optionally show a success notification
+
+                } catch (error) {
+                    console.error('Frontend error recording repayment:', error);
+                    this.modalError = error.message || 'An unexpected error occurred.'; // Display error to user
+                }
+            },
+
+            async submitEditLoan() {
+                this.modalError = null; // Clear modal error
+                console.log('Submitting Edit Loan:', this.selectedLoan);
+                if (!this.selectedLoan || !this.selectedLoan.id) {
+                    this.modalError = "No loan selected for editing.";
+                    return;
+                }
+
+                try {
+                    // Example API call (PUT or PATCH to /api/loans/{id})
+                    const response = await fetch(`/api/loans/${this.selectedLoan.id}`, {
+                        method: 'PUT', // or 'PATCH'
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        // Send only the editable fields, or the whole selectedLoan object
+                        body: JSON.stringify({
+                            amount: this.selectedLoan.amount,
+                            status: this.selectedLoan.status,
+                            due_date: this.selectedLoan.due_date,
+                            // Include other editable fields
+                        })
+                    });
+
+                    const result = await response.json(); // Assuming backend returns JSON
+
+                    if (!response.ok) {
+                        this.modalError = result.message || 'Failed to save loan changes.';
+                        console.error('Backend error saving loan changes:', result);
+                        return; // Stop here
+                    }
+
+                    console.log('Loan changes saved successfully.', result);
+                    this.closeModal('editLoan');
+                    this.fetchData(); // Refresh data
+
+                } catch (error) {
+                    console.error('Frontend error saving loan changes:', error);
+                    this.modalError = error.message || 'An unexpected error occurred.'; // Display error
+                }
+            },
+
+            // Add delete method
+            async deleteItem(item) {
+                this.modalError = null; // Clear modal error
+                console.log('Deleting item:', item);
+                if (!item || !item.type || !item.item || !item.item.id) {
+                    this.modalError = "Invalid item selected for deletion.";
+                    return;
+                }
+
+                const endpoint = item.type === 'loan' ? `/api/loans/${item.item.id}` : `/api/repayments/${item.item.id}`;
+
+                try {
+                    // Example API call (DELETE)
+                    const response = await fetch(endpoint, {
+                        method: 'DELETE'
+                    });
+
+                    const result = await response.json().catch(() => ({})); // Try to parse JSON, fallback to empty obj
+
+                    if (!response.ok) {
+                        this.modalError = result.message || `Failed to delete ${item.type}.`;
+                        console.error(`Backend error deleting ${item.type}:`, result);
+                        return; // Stop here
+                    }
+
+                    console.log(`${item.type.capitalize()} deleted successfully.`, result);
+                    this.closeModal('deleteConfirmation');
+                    this.fetchData(); // Refresh data
+
+                } catch (error) {
+                    console.error(`Frontend error deleting ${item.type}:`, error);
+                    this.modalError = error.message || `An unexpected error occurred during deletion.`; // Display error
+                }
+            },
+
+
+            // Pagination methods (basic example, integrate with your pagination include)
+            prevPage() {
+                if (this.currentPage > 1) {
+                    this.currentPage--;
+                }
+            },
+            nextPage() { // No need for dataType parameter if only paginating loans
+                if (this.currentPage < this.totalPages('loans')) { // Use 'loans' as type
+                    this.currentPage++;
+                }
+            },
+            // paginationStart, paginationEnd computed properties added above
+
+
+            // Sorting methods
+            sortBy(column) {
+                if (this.sortColumn === column) {
+                    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    this.sortColumn = column;
+                    this.sortDirection = 'asc'; // Default to ascending when sorting a new column
+                }
+                // Sorting is handled in the filteredLoans computed property
+                // this.currentPage = 1; // Reset to first page after sorting (already happens in filteredLoans)
+            },
+
+
+            // Utility functions
+            formatCurrency(value) {
+                const num = parseFloat(value);
+                if (isNaN(num)) return 'N/A';
+                return new Intl.NumberFormat('en-KE', {
+                    style: 'currency',
+                    currency: 'KES',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(num);
+            },
+
+            formatDate(dateString) {
+                if (!dateString) return 'N/A';
+                try {
+                    // Handle potential Z or +HH:MM timezone offset in date string
+                    const date = new Date(dateString.endsWith('Z') || dateString.includes('+') ? dateString : dateString + 'T00:00:00');
+                    if (isNaN(date.getTime())) return dateString; // Check if date is valid
+
+                    return date.toLocaleDateString('en-KE', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                } catch (e) {
+                    console.error('Error parsing date:', dateString, e);
+                    return dateString; // Return original string on error
+                }
+            },
+
+            // getChamaName method (needed if loan data doesn't include chamaName)
+            // If your fetched data *does* include loan.chamaName, this might not be needed.
+            getChamaName(chamaId) {
+                const chama = this.chamas.find(c => c.id === chamaId);
+                return chama ? chama.name : 'Unknown Chama';
+            },
+
+            // statusBadgeClass (already defined and looks good)
+            statusBadgeClass(status) {
+                const classes = {
+                    'active': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                    'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+                    'overdue': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                    'paid': 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
+                };
+                // Ensure status is lower case for lookup, but use original status for display in x-text
+                return classes[status.toLowerCase()] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+            },
+
+
+        } // End return
+    } // End loansManager function
+</script>
+{% endblock %}z

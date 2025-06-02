@@ -1,0 +1,1658 @@
+{% extends 'dashboard_chama_admin/layout.html' %} {% block title %}Contributions & Penalties{% endblock %} {% block content %}
+<div class="px-4 py-6 sm:px-6 lg:px-8 space-y-8" x-data="contributionsManager()" x-init="init()">
+
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-semibold leading-tight text-gray-900 dark:text-gray-100">Contributions & Penalties</h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Track, manage, and analyze all chama financial activities.</p>
+        </div>
+
+        <div class="w-full md:w-64">
+            <label for="chama-select" class="sr-only">Select Chama</label>
+            <select id="chama-select" x-model="selectedChama" @change="filterData" class="w-full block px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm
+                                  bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                                  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                <option value="all">All Chamas</option>
+                <template x-for="chama in chamas" :key="chama.id">
+                    <option :value="chama.id" x-text="chama.name"></option>
+                </template>
+            </select>
+            <div x-show="chamas.length > 0" class="mt-2 text-xs text-green-600 dark:text-green-400">
+                Chamas loaded: <span x-text="chamas.length"></span>
+            </div>
+            <div x-show="isLoading" class="mt-2 text-xs text-yellow-600 dark:text-yellow-400">
+                Loading chamas...
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-shadow hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Collected</p>
+                    <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100" x-text="formatCurrency(stats.totalCollected)"></p>
+                </div>
+                <div class="bg-green-100 dark:bg-green-900/30 p-2.5 rounded-lg">
+                    <svg class="w-5 h-5 text-green-600 dark:text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-shadow hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pending</p>
+                    <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100" x-text="formatCurrency(stats.totalPending)"></p>
+                </div>
+                <div class="bg-yellow-100 dark:bg-yellow-900/30 p-2.5 rounded-lg">
+                    <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-shadow hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Overdue</p>
+                    <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100" x-text="formatCurrency(stats.totalOverdue)"></p>
+                </div>
+                <div class="bg-orange-100 dark:bg-orange-900/30 p-2.5 rounded-lg">
+                    <svg class="w-5 h-5 text-orange-600 dark:text-orange-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-shadow hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Active Penalties</p>
+                    <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100" x-text="formatCurrency(stats.totalActivePenalties)"></p>
+                </div>
+                <div class="bg-red-100 dark:bg-red-900/30 p-2.5 rounded-lg">
+                    <svg class="w-5 h-5 text-red-600 dark:text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.008v.008H12v-.008Z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="flex gap-3">
+            <button @click="openModal('recordPayment')" class="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm shadow-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900">
+                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+                </svg>
+                Record Payment
+            </button>
+            <button @click="openModal('addPenalty')" class="inline-flex items-center justify-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900">
+                 <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+                 </svg>
+                Add Penalty
+            </button>
+        </div>
+        <div class="w-full sm:w-64">
+            <label for="table-search" class="sr-only">Search</label>
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                    </svg>
+                </div>
+                <input type="search" id="table-search" x-model.debounce.300ms="searchTerm" @input="filterData" class="w-full block p-2 pl-10 text-sm text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Search members...">
+            </div>
+        </div>
+    </div>
+
+    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+        <!-- Tabs -->
+        <nav class="flex space-x-8 text-sm font-medium" aria-label="Tabs">
+            <button @click="activeTab = 'contributions'; resetPagination();" :class="activeTab === 'contributions'
+              ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+              : 'border-b-2 border-transparent text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100'" class="pb-2 transition-colors">
+            Contributions
+            <span
+              x-text="`(${filteredContributions.length})`"
+              class="ml-2 inline-block px-2 py-0.5 rounded-full text-xs font-semibold"
+              :class="activeTab === 'contributions'
+                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
+            ></span>
+          </button>
+
+            <button @click="activeTab = 'penalties'; resetPagination();" :class="activeTab === 'penalties'
+              ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+              : 'border-b-2 border-transparent text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100'" class="pb-2 transition-colors">
+            Penalties
+            <span
+              x-text="`(${filteredPenalties.length})`"
+              class="ml-2 inline-block px-2 py-0.5 rounded-full text-xs font-semibold"
+              :class="activeTab === 'penalties'
+                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
+            ></span>
+          </button>
+        </nav>
+
+        <!-- Export Buttons -->
+        <div class="flex space-x-3">
+            <!-- Excel Export -->
+            <button @click="exportData('excel')" :disabled="isExporting" class="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white
+                   text-sm font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            <!-- Table Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            <span>Export Excel</span>
+          </button>
+
+            <!-- PDF Export -->
+            <button @click="exportData('pdf')" :disabled="isExporting" class="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-red-400 to-red-600 hover:from-red-500 hover:to-red-700 text-white
+                   text-sm font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            <!-- Document Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 7h10M7 11h6m-6 4h4M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
+            </svg>
+            <span>Export PDF</span>
+          </button>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div x-show="activeTab === 'contributions'" x-transition>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-900/50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" @click="sortBy('member')">
+                                Member <span x-show="sortColumn === 'member'" x-text="sortDirection === 'asc' ? '▲' : '▼'"></span>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" @click="sortBy('amount')">
+                                Amount <span x-show="sortColumn === 'amount'" x-text="sortDirection === 'asc' ? '▲' : '▼'"></span>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" @click="sortBy('date')">
+                                Date <span x-show="sortColumn === 'date'" x-text="sortDirection === 'asc' ? '▲' : '▼'"></span>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Method</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Chama</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <template x-if="paginatedContributions.length === 0">
+                             <tr>
+                                <td colspan="7" class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    No contributions found matching your criteria.
+                                </td>
+                            </tr>
+                        </template>
+                        <template x-for="contribution in paginatedContributions" :key="contribution.id">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100" x-text="contribution.member"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" x-text="formatCurrency(contribution.amount)"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" x-text="formatDate(contribution.date)"></td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span :class="{
+                                        'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300': contribution.status === 'Paid',
+                                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300': contribution.status === 'Pending',
+                                        'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300': contribution.status === 'Overdue'
+                                    }" class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full">
+                                        <span x-text="contribution.status"></span>
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" x-text="contribution.method"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" x-text="getChamaName(contribution.chamaId)"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                    <button @click="openModal('editContribution', contribution)" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3 transition-colors">Edit</button>
+                                    <button @click="openModal('deleteConfirmation', { type: 'contribution', item: contribution })" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors">Delete</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            <div x-show="totalPages('contributions') > 1" class="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
+                <div class="flex-1 flex justify-between sm:hidden">
+                    <button @click="prevPage" :disabled="currentPage === 1" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"> Previous </button>
+                    <button @click="nextPage('contributions')" :disabled="currentPage === totalPages('contributions')" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"> Next </button>
+                </div>
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-gray-700 dark:text-gray-300">
+                            Showing
+                            <span class="font-medium" x-text="paginationStart('contributions')"></span> to
+                            <span class="font-medium" x-text="paginationEnd('contributions')"></span> of
+                            <span class="font-medium" x-text="filteredContributions.length"></span> results
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button @click="prevPage" :disabled="currentPage === 1" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors">
+                                <span class="sr-only">Previous</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                  <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Page <span x-text="currentPage"></span> of <span x-text="totalPages('contributions')"></span>
+                            </span>
+                            <button @click="nextPage('contributions')" :disabled="currentPage === totalPages('contributions')" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors">
+                                <span class="sr-only">Next</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                  <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="activeTab === 'penalties'" x-transition>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-900/50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" @click="sortBy('member')">
+                                Member <span x-show="sortColumn === 'member'" x-text="sortDirection === 'asc' ? '▲' : '▼'"></span>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" @click="sortBy('amount')">
+                                Amount <span x-show="sortColumn === 'amount'" x-text="sortDirection === 'asc' ? '▲' : '▼'"></span>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reason</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" @click="sortBy('date')">
+                                Date <span x-show="sortColumn === 'date'" x-text="sortDirection === 'asc' ? '▲' : '▼'"></span>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Chama</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <template x-if="paginatedPenalties.length === 0">
+                             <tr>
+                                <td colspan="7" class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    No penalties found matching your criteria.
+                                </td>
+                            </tr>
+                        </template>
+                        <template x-for="penalty in paginatedPenalties" :key="penalty.id">
+                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100" x-text="penalty.member"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" x-text="formatCurrency(penalty.amount)"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" x-text="penalty.reason"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" x-text="formatDate(penalty.date)"></td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span :class="{
+                                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300': penalty.status === 'Active',
+                                        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300': penalty.status === 'Waived',
+                                        'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300': penalty.status === 'Paid' // Added Paid status for penalties
+                                    }" class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full">
+                                        <span x-text="penalty.status"></span>
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" x-text="getChamaName(penalty.chamaId)"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                    <button @click="openModal('editPenalty', penalty)" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3 transition-colors">Edit</button>
+                                    <button @click="openModal('deleteConfirmation', { type: 'penalty', item: penalty })" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors">Delete</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            <div x-show="totalPages('penalties') > 1" class="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
+                <div class="flex-1 flex justify-between sm:hidden">
+                    <button @click="prevPage" :disabled="currentPage === 1" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"> Previous </button>
+                    <button @click="nextPage('penalties')" :disabled="currentPage === totalPages('penalties')" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"> Next </button>
+                </div>
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-gray-700 dark:text-gray-300">
+                            Showing
+                            <span class="font-medium" x-text="paginationStart('penalties')"></span> to
+                            <span class="font-medium" x-text="paginationEnd('penalties')"></span> of
+                            <span class="font-medium" x-text="filteredPenalties.length"></span> results
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button @click="prevPage" :disabled="currentPage === 1" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors">
+                                <span class="sr-only">Previous</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"> <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /> </svg>
+                            </button>
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Page <span x-text="currentPage"></span> of <span x-text="totalPages('penalties')"></span>
+                            </span>
+                            <button @click="nextPage('penalties')" :disabled="currentPage === totalPages('penalties')" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors">
+                                <span class="sr-only">Next</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"> <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /> </svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div x-show="modals.recordPayment" x-transition:enter="transition duration-300 ease-out" x-transition:enter-start="opacity-0 transform translate-y-8 scale-95" x-transition:enter-end="opacity-100 transform translate-y-0 scale-100" x-transition:leave="transition duration-200 ease-in"
+        x-transition:leave-start="opacity-100 transform translate-y-0 scale-100" x-transition:leave-end="opacity-0 transform translate-y-8 scale-95" class="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black bg-opacity-20 backdrop-blur-none overflow-y-auto"
+        x-cloak>
+        <div @click.away="closeModal('recordPayment')" class="mt-20 sm:mt-0 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 transform transition-all overflow-hidden flex flex-col">
+            <!-- Header -->
+            <header class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    Record New Contribution
+                </h3>
+                <button @click="closeModal('recordPayment')" class="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+              <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+            </header>
+
+            <!-- Body (scrollable, hidden scrollbar) -->
+            <form @submit.prevent="addContribution" class="px-6 py-4 space-y-5 overflow-y-auto max-h-[70vh] hide-scrollbar">
+                <template x-if="error">
+              <div class="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm" x-text="error"></div>
+            </template>
+
+                <!-- Chama + Member row -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Chama Select -->
+                    <div>
+                        <label for="record-chama" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Chama</label>
+                        <select id="record-chama" x-model="newPayment.chamaId" @change="fetchMembersForChama($event.target.value)" required class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                         placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                  <option value="" disabled>Select Chama</option>
+                  <template x-for="chama in chamas" :key="chama.id">
+                    <option :value="chama.id" x-text="chama.name"></option>
+                  </template>
+                </select>
+                    </div>
+
+                    <!-- Member Select -->
+                    <div>
+                        <label for="record-member" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Member</label>
+                        <select id="record-member" x-model="newPayment.userId" :disabled="isLoading || !newPayment.chamaId || members.length === 0" required class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                         placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                  <option value="" disabled>Select Member</option>
+                  <template x-if="isLoading">
+                    <option disabled>Loading members...</option>
+                  </template>
+                  <template x-if="!isLoading && members.length === 0">
+                    <option disabled>No members</option>
+                  </template>
+                  <template x-for="member in members" :key="member.id">
+                    <option :value="member.id" x-text="member.name"></option>
+                  </template>
+                </select>
+                    </div>
+                </div>
+
+                <!-- Amount + Date -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="record-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount (KES)</label>
+                        <input type="number" id="record-amount" x-model.number="newPayment.amount" placeholder="0.00" required min="0" step="any" class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                         placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+                    </div>
+                    <div>
+                        <label for="record-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
+                        <input type="date" id="record-date" x-model="newPayment.date" required class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                         focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+                    </div>
+                </div>
+
+                <!-- Method + Status -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="record-method" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Method</label>
+                        <select id="record-method" x-model="newPayment.method" required class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                         focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                  <option value="" disabled>Select Method</option>
+                  <option>M-Pesa</option>
+                  <option>Bank Transfer</option>
+                  <option>Cash</option>
+                  <option>Other</option>
+                </select>
+                    </div>
+                    <div>
+                        <label for="record-status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                        <select id="record-status" x-model="newPayment.status" required class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                         focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                  <option>Paid</option>
+                  <option>Pending</option>
+                  <option>Overdue</option>
+                </select>
+                    </div>
+                </div>
+
+                <!-- Reference + Notes -->
+                <div>
+                    <label for="record-reference" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Reference Number <span class="text-gray-400">(Optional)</span>
+              </label>
+                    <input type="text" id="record-reference" x-model="newPayment.reference_number" placeholder="ABC123" class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                       placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+                </div>
+                <div>
+                    <label for="record-notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Notes <span class="text-gray-400">(Optional)</span>
+              </label>
+                    <textarea id="record-notes" x-model="newPayment.notes" rows="4" class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                       placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></textarea>
+                </div>
+            </form>
+
+            <!-- Footer -->
+            <footer class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700">
+                <button type="button" @click="closeModal('recordPayment')" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300
+                     bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+              Cancel
+            </button>
+                <button type="submit" @click="addContribution" :disabled="isSubmitting || isLoading || !newPayment.chamaId || !newPayment.userId" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500
+                     text-white font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition">
+              <template x-if="isSubmitting">
+                <svg class="animate-spin w-5 h-5 mr-2 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+              </template>
+              <span x-text="isSubmitting ? 'Saving…' : 'Record Payment'"></span>
+            </button>
+            </footer>
+        </div>
+    </div>
+
+
+    <!-- Add Penalty Modal -->
+    <div x-show="modals.addPenalty" x-transition:enter="transition duration-300 ease-out" x-transition:enter-start="opacity-0 transform translate-y-8 scale-95" x-transition:enter-end="opacity-100 transform translate-y-0 scale-100" x-transition:leave="transition duration-200 ease-in"
+        x-transition:leave-start="opacity-100 transform translate-y-0 scale-100" x-transition:leave-end="opacity-0 transform translate-y-8 scale-95" class="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black bg-opacity-20 backdrop-blur-none overflow-y-auto"
+        x-cloak>
+        <div @click.away="closeModal('addPenalty')" class="mt-20 sm:mt-0 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 transform transition-all overflow-hidden flex flex-col">
+            <!-- Header -->
+            <header class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    Add New Penalty
+                </h3>
+                <button @click="closeModal('addPenalty')" class="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+              <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+            </header>
+
+            <!-- Body -->
+            <form @submit.prevent="addPenalty" class="px-6 py-4 space-y-5 overflow-y-auto max-h-[70vh] hide-scrollbar">
+                <!-- Chama + Member select -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="penalty-chama" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Chama</label>
+                        <select id="penalty-chama" x-model="newPenalty.chamaId" @change="fetchMembersForChama($event.target.value)" required class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                         focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                  <option value="" disabled>Select Chama</option>
+                  <template x-for="chama in chamas" :key="chama.id">
+                    <option :value="chama.id" x-text="chama.name"></option>
+                  </template>
+                </select>
+                    </div>
+                    <div>
+                        <label for="penalty-member" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Member</label>
+                        <select id="penalty-member" x-model="newPenalty.userId" :disabled="isLoading || !newPenalty.chamaId || members.length === 0" required class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                         focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                  <option value="" disabled>Select Member</option>
+                  <template x-if="isLoading">
+                    <option disabled>Loading...</option>
+                  </template>
+                  <template x-if="!isLoading && members.length === 0">
+                    <option disabled>No members</option>
+                  </template>
+                  <template x-for="member in members" :key="member.id">
+                    <option :value="member.id" x-text="member.name"></option>
+                  </template>
+                </select>
+                    </div>
+                </div>
+
+                <!-- Amount + Date -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="penalty-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount (KES)</label>
+                        <input type="number" id="penalty-amount" x-model.number="newPenalty.amount" placeholder="0" required min="0" step="any" class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                         focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+                    </div>
+                    <div>
+                        <label for="penalty-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date Issued</label>
+                        <input type="date" id="penalty-date" x-model="newPenalty.date" required class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                         focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+                    </div>
+                </div>
+
+                <!-- Reason + Status -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="penalty-reason" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Reason</label>
+                        <input type="text" id="penalty-reason" x-model="newPenalty.reason" placeholder="e.g. Late payment" required class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                         focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+                    </div>
+                    <div>
+                        <label for="penalty-status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                        <select id="penalty-status" x-model="newPenalty.status" required class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                         focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                  <option>Active</option>
+                  <option>Paid</option>
+                  <option>Waived</option>
+                </select>
+                    </div>
+                </div>
+
+                <!-- Optional Notes -->
+                <div>
+                    <label for="penalty-notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes <span class="text-gray-400">(Optional)</span></label>
+                    <textarea id="penalty-notes" x-model="newPenalty.notes" rows="3" class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                       focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></textarea>
+                </div>
+            </form>
+
+            <!-- Footer -->
+            <footer class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700">
+                <button type="button" @click="closeModal('addPenalty')" class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+              Cancel
+            </button>
+                <button type="submit" @click="addPenalty" :disabled="isSubmitting" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition">
+              <template x-if="isSubmitting">
+                <svg class="animate-spin w-5 h-5 mr-2 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+              </template>
+              <span x-text="isSubmitting ? 'Adding…' : 'Add Penalty'"></span>
+            </button>
+            </footer>
+        </div>
+    </div>
+
+
+
+    <!-- Edit Contribution Modal -->
+    <div x-show="modals.editContribution" x-transition:enter="transition duration-300 ease-out" x-transition:enter-start="opacity-0 transform translate-y-8 scale-95" x-transition:enter-end="opacity-100 transform translate-y-0 scale-100" x-transition:leave="transition duration-200 ease-in"
+        x-transition:leave-start="opacity-100 transform translate-y-0 scale-100" x-transition:leave-end="opacity-0 transform translate-y-8 scale-95" class="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black bg-opacity-20 backdrop-blur-none overflow-y-auto"
+        x-cloak>
+        <div @click.away="closeModal('editContribution')" class="mt-20 sm:mt-0 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 transform transition-all overflow-hidden flex flex-col">
+            <!-- Header -->
+            <header class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    Edit Contribution
+                </h3>
+                <button @click="closeModal('editContribution')" class="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+              <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+            </header>
+
+            <!-- Body -->
+            <form @submit.prevent="updateContribution" class="px-6 py-4 space-y-5 overflow-y-auto max-h-[70vh] hide-scrollbar">
+                <template x-if="editingItem">
+              <div class="space-y-4">
+                <!-- Chama & Member (readonly) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Chama</label>
+                    <p class="mt-1 text-sm text-gray-900 dark:text-gray-100" x-text="getChamaName(editingItem.chamaId)"></p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Member</label>
+                    <p class="mt-1 text-sm text-gray-900 dark:text-gray-100" x-text="editingItem.member"></p>
+                  </div>
+                </div>
+      
+                <!-- Amount & Date -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label for="edit-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount (KES)</label>
+                    <input
+                      type="number"
+                      id="edit-amount"
+                      x-model.number="editingItem.amount"
+                      required
+                      min="0"
+                      step="any"
+                      class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label for="edit-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
+                    <input
+                      type="date"
+                      id="edit-date"
+                      x-model="editingItem.date"
+                      required
+                      class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                    />
+                  </div>
+                </div>
+      
+                <!-- Method & Status -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label for="edit-method" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Method</label>
+                    <select
+                      id="edit-method"
+                      x-model="editingItem.method"
+                      required
+                      class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                    >
+                      <option>M-Pesa</option>
+                      <option>Bank Transfer</option>
+                      <option>Cash</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="edit-status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                    <select
+                      id="edit-status"
+                      x-model="editingItem.status"
+                      required
+                      class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                    >
+                      <option>Paid</option>
+                      <option>Pending</option>
+                      <option>Overdue</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </template>
+            </form>
+
+            <!-- Footer -->
+            <footer class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700">
+                <button type="button" @click="closeModal('editContribution')" class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+              Cancel
+            </button>
+                <button type="submit" @click="updateContribution" :disabled="isSubmitting" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition">
+              <template x-if="isSubmitting">
+                <svg class="animate-spin w-5 h-5 mr-2 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+              </template>
+              <span x-text="isSubmitting ? 'Saving…' : 'Save Changes'"></span>
+            </button>
+            </footer>
+        </div>
+    </div>
+
+
+    <!-- Edit Penalty Modal -->
+    <div x-show="modals.editPenalty" x-transition:enter="transition duration-300 ease-out" x-transition:enter-start="opacity-0 transform translate-y-8 scale-95" x-transition:enter-end="opacity-100 transform translate-y-0 scale-100" x-transition:leave="transition duration-200 ease-in"
+        x-transition:leave-start="opacity-100 transform translate-y-0 scale-100" x-transition:leave-end="opacity-0 transform translate-y-8 scale-95" class="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black bg-opacity-20 backdrop-blur-none overflow-y-auto"
+        x-cloak>
+        <div @click.away="closeModal('editPenalty')" class="mt-20 sm:mt-0 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 transform transition-all overflow-hidden flex flex-col">
+            <!-- Header -->
+            <header class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Edit Penalty</h3>
+                <button @click="closeModal('editPenalty')" class="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+              <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+            </header>
+
+            <!-- Body -->
+            <form @submit.prevent="updatePenalty" class="px-6 py-4 space-y-5 overflow-y-auto max-h-[70vh] hide-scrollbar">
+                <template x-if="editingItem">
+              <div class="space-y-4">
+                <!-- Chama & Member readonly -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Chama</label>
+                    <p class="mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100"
+                       x-text="getChamaName(editingItem.chamaId)"></p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Member</label>
+                    <p class="mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100"
+                       x-text="editingItem.member"></p>
+                  </div>
+                </div>
+      
+                <!-- Amount + Date -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label for="edit-penalty-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount (KES)</label>
+                    <input
+                      type="number"
+                      id="edit-penalty-amount"
+                      x-model.number="editingItem.amount"
+                      required min="0" step="any"
+                      class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label for="edit-penalty-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date Issued</label>
+                    <input
+                      type="date"
+                      id="edit-penalty-date"
+                      x-model="editingItem.date"
+                      required
+                      class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                    />
+                  </div>
+                </div>
+      
+                <!-- Reason + Status -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label for="edit-penalty-reason" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Reason</label>
+                    <input
+                      type="text"
+                      id="edit-penalty-reason"
+                      x-model="editingItem.reason"
+                      required
+                      class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label for="edit-penalty-status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                    <select
+                      id="edit-penalty-status"
+                      x-model="editingItem.status"
+                      required
+                      class="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                    >
+                      <option>Active</option>
+                      <option>Paid</option>
+                      <option>Waived</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </template>
+            </form>
+
+            <!-- Footer -->
+            <footer class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700">
+                <button type="button" @click="closeModal('editPenalty')" class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg
+                     hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+              Cancel
+            </button>
+                <button type="submit" @click="updatePenalty" :disabled="isSubmitting" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white font-semibold
+                     rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition">
+              <template x-if="isSubmitting">
+                <svg class="animate-spin w-5 h-5 mr-2 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+              </template>
+              <span x-text="isSubmitting ? 'Saving…' : 'Save Changes'"></span>
+            </button>
+            </footer>
+        </div>
+    </div>
+
+
+    <div x-show="modals.deleteConfirmation" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 overflow-y-auto bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80" x-cloak>
+        <div class="flex items-center justify-center min-h-screen px-4 py-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden transform transition-all sm:max-w-lg sm:w-full" @click.away="closeModal('deleteConfirmation')">
+                <div class="p-6 text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30">
+                        <svg class="h-6 w-6 text-red-600 dark:text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.008v.008H12v-.008Z" />
+                        </svg>
+                    </div>
+                    <h3 class="mt-5 text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">Delete Confirmation</h3>
+                    <div class="mt-2 px-7 py-3">
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            Are you sure you want to delete this <span x-text="itemToDelete?.type"></span> record?
+                            <span x-show="itemToDelete?.item?.member">For member: <strong x-text="itemToDelete?.item?.member"></strong>.</span> This action cannot be undone.
+                        </p>
+                    </div>
+                    <div class="mt-6 flex justify-center space-x-3">
+                        <button type="button" @click="closeModal('deleteConfirmation')" class="btn-secondary">Cancel</button>
+                        <button type="button" @click="deleteItem()" class="btn-danger">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    /* Hide native scrollbar but keep scrolling enabled */
+    
+    .hide-scrollbar {
+        -ms-overflow-style: none;
+        /* IE and Edge */
+        scrollbar-width: none;
+        /* Firefox */
+    }
+    
+    .hide-scrollbar::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+    }
+    
+    .form-input {
+        @apply block w-full px-3 py-2 border border-gray-300 dark: border-gray-600 rounded-md shadow-sm bg-white dark: bg-gray-700 text-gray-900 dark: text-gray-100 focus: outline-none focus: ring-indigo-500 focus: border-indigo-500 sm: text-sm disabled: opacity-50;
+    }
+    
+    .btn-primary {
+        @apply inline-flex justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover: bg-indigo-700 focus: outline-none focus: ring-2 focus: ring-offset-2 focus: ring-indigo-500 dark: focus: ring-offset-gray-900 transition-colors;
+    }
+    
+    .btn-secondary {
+        @apply inline-flex justify-center px-4 py-2 border border-gray-300 dark: border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark: text-gray-300 bg-white dark: bg-gray-700 hover: bg-gray-50 dark: hover: bg-gray-600 focus: outline-none focus: ring-2 focus: ring-offset-2 focus: ring-indigo-500 dark: focus: ring-offset-gray-900 transition-colors;
+    }
+    
+    .btn-danger {
+        @apply inline-flex justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover: bg-red-700 focus: outline-none focus: ring-2 focus: ring-offset-2 focus: ring-red-500 dark: focus: ring-offset-gray-900 transition-colors;
+    }
+    
+    [x-cloak] {
+        display: none !important;
+    }
+</style>
+
+<script>
+    function contributionsManager() {
+        return {
+            // --- State ---
+            selectedChama: 'all',
+            searchTerm: '',
+            activeTab: 'contributions',
+            chamas: [], // Initialize as empty
+            allContributions: [], // Initialize as empty
+            allPenalties: [], // Initialize as empty
+            filteredContributions: [],
+            filteredPenalties: [],
+            paginatedContributions: [],
+            paginatedPenalties: [],
+            // Sorting
+            sortColumn: 'date',
+            sortDirection: 'desc',
+            // Pagination
+            currentPage: 1,
+            itemsPerPage: 10,
+            // Modals
+            modals: {
+                recordPayment: false,
+                addPenalty: false,
+                editContribution: false,
+                editPenalty: false,
+                deleteConfirmation: false,
+            },
+            // ** Important: Add userId to forms **
+            newPayment: {
+                chamaId: '',
+                userId: '', // Will be set by member select
+                member: '', // Can be derived on backend or updated based on select
+                amount: null,
+                date: '',
+                method: '',
+                status: 'Paid',
+                reference_number: '',
+                notes: ''
+            },
+            newPenalty: {
+                chamaId: '',
+                userId: '', // Will be set by member select
+                member: '', // Can be derived on backend or updated based on select
+                amount: null,
+                reason: '',
+                date: '',
+                status: 'Active',
+                penalty_type: 'Other'
+            },
+            editingItem: null,
+            itemToDelete: null,
+            // Loading/Error States
+            isLoading: false, // For initial data fetch and member fetch
+            isSubmitting: false, // For form submissions (add, update, delete)
+            error: null, // To store error messages
+            isExporting: false, // <-- ADD THIS LINE
+
+            // Member list for the modal dropdown (dynamically fetched by chama)
+            members: [],
+            // Member list for filtering/display on the main page (extracted from all data if needed)
+            // allComponentMembers: [], // Optional: Keep if you need a list of *all* members for filters outside the modal
+
+
+            // --- Computed Properties / Getters ---
+            get stats() {
+                // Calculate from allContributions/allPenalties which now come from backend
+                // These will be [] initially, so reduce will return 0.
+                const contributionsToSum = this.selectedChama === 'all' ? this.allContributions : this.allContributions.filter(c => c.chamaId == this.selectedChama); // Use == for potential type mismatch if IDs are numbers/strings
+                const penaltiesToSum = this.selectedChama === 'all' ? this.allPenalties : this.allPenalties.filter(p => p.chamaId == this.selectedChama);
+
+                return {
+                    totalCollected: contributionsToSum.filter(c => c.status === 'Paid').reduce((sum, c) => sum + (c.amount || 0), 0), // Added || 0 for safety
+                    totalPending: contributionsToSum.filter(c => c.status === 'Pending').reduce((sum, c) => sum + (c.amount || 0), 0), // Added || 0 for safety
+                    totalOverdue: contributionsToSum.filter(c => c.status === 'Overdue').reduce((sum, c) => sum + (c.amount || 0), 0), // Added || 0 for safety
+                    totalActivePenalties: penaltiesToSum.filter(p => p.status === 'Active').reduce((sum, p) => sum + (p.amount || 0), 0), // Added || 0 for safety
+                }
+            },
+            totalPages(type) {
+                const totalItems = type === 'contributions' ? this.filteredContributions.length : this.filteredPenalties.length;
+                return Math.ceil(totalItems / this.itemsPerPage);
+            },
+            paginationStart(type) {
+                const totalItems = type === 'contributions' ? this.filteredContributions.length : this.filteredPenalties.length;
+                return totalItems === 0 ? 0 : (this.currentPage - 1) * this.itemsPerPage + 1;
+            },
+            paginationEnd(type) {
+                const data = type === 'contributions' ? this.filteredContributions : this.filteredPenalties;
+                const end = this.currentPage * this.itemsPerPage;
+                return Math.min(end, data.length);
+            },
+            async exportData(type) {
+                if (this.isExporting) return;
+                this.isExporting = true;
+                this.error = null;
+
+                const dataType = this.activeTab; // 'contributions' or 'penalties'
+                const params = new URLSearchParams({
+                    chamaId: this.selectedChama,
+                    searchTerm: this.searchTerm,
+                    dataType
+                }).toString();
+
+                // endpoint: /contributions/api/export/pdf?... or .../excel?...
+                const endpoint = `/contributions/api/export/${type}?${params}`;
+
+                try {
+                    const response = await fetch(endpoint);
+                    if (!response.ok) {
+                        let msg = `HTTP ${response.status}`;
+                        try {
+                            const e = await response.json();
+                            msg = e.description || msg;
+                        } catch {}
+                        throw new Error(msg);
+                    }
+
+                    const blob = await response.blob();
+
+                    // Parse out filename from Content-Disposition
+                    const cd = response.headers.get('Content-Disposition') || '';
+                    let filename = `${dataType}-report.${type === 'pdf' ? 'pdf' : 'xlsx'}`;
+
+                    // 1. filename*=UTF-8''encoded
+                    let match = cd.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+                    if (match) {
+                        filename = decodeURIComponent(match[1]);
+                    } else {
+                        // 2. filename="name.ext"
+                        match = cd.match(/filename\s*=\s*"([^"]+)"/i);
+                        if (match) {
+                            filename = match[1];
+                        }
+                    }
+
+                    // fallback: include chama name & search term
+                    if (!match) {
+                        const chamaPart = this.selectedChama !== 'all' ?
+                            this.getChamaName(this.selectedChama).replace(/[^a-zA-Z0-9]/g, '_') :
+                            'all';
+                        const searchPart = this.searchTerm ?
+                            '-search-' + this.searchTerm.replace(/[^a-zA-Z0-9]/g, '_') :
+                            '';
+                        filename = `${dataType}-${chamaPart}${searchPart}-report.${type === 'pdf' ? 'pdf' : 'xlsx'}`;
+                    }
+
+                    // Trigger download
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+
+                } catch (err) {
+                    console.error(`Error exporting ${type}:`, err);
+                    this.error = `Export failed: ${err.message}`;
+                } finally {
+                    this.isExporting = false;
+                }
+            },
+
+
+
+            // --- Formatting Functions (ADDED/PLACEHOLDER) ---
+            formatCurrency(amount) {
+                // Basic currency formatting
+                // You might want a more robust library for internationalization
+                if (amount === null || amount === undefined) {
+                    return 'N/A'; // Or '0' or '-'
+                }
+                // Ensure it's a number before formatting
+                const num = parseFloat(amount);
+                if (isNaN(num)) {
+                    return 'Invalid Amount'; // Or handle appropriately
+                }
+                return 'KES ' + num.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+            },
+
+            formatDate(dateString) {
+                // Basic date formatting (assuming YYYY-MM-DD from backend)
+                // Returns in a readable format like 'DD Mon, YYYY'
+                if (!dateString) {
+                    return 'N/A';
+                }
+                try {
+                    const options = {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    };
+                    // Parse dateString as UTC to avoid timezone issues shifting the date
+                    // Or ensure your backend/frontend handle timezones consistently
+                    const date = new Date(dateString + 'T00:00:00Z'); // Treat as UTC start of day
+
+                    // Check if the date is valid
+                    if (isNaN(date.getTime())) {
+                        console.error("Invalid date string received:", dateString);
+                        return 'Invalid Date';
+                    }
+
+                    return date.toLocaleDateString(undefined, options); // Use user's locale
+                } catch (e) {
+                    console.error("Error formatting date:", dateString, e);
+                    return 'Error'; // Or 'Invalid Date'
+                }
+            },
+            // --- End Formatting Functions ---
+
+            // --- Methods ---
+            async init() {
+                console.log("Alpine component init() called.");
+                // Fetch initial data (chamas, contributions, penalties) when the component loads
+                await this.fetchData();
+                // extractMembers is now deprecated for modal dropdown,
+                // it could be adapted to populate a separate 'allComponentMembers' if needed for other features.
+                this.filterData(); // Initial filter/sort after data is loaded
+            },
+
+            // Method to fetch all necessary data (chamas, contributions, penalties) for the main view
+            async fetchData() {
+                this.isLoading = true;
+                this.error = null; // Clear error for main fetch
+                console.log("Fetching initial data...");
+                try {
+                    // Adjust URL based on your blueprint registration
+                    const response = await fetch('/contributions/api/data');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status} ${await response.text()}`);
+                    }
+                    const data = await response.json();
+                    console.log("Initial Data received:", data);
+                    this.chamas = data.chamas || [];
+                    this.allContributions = data.contributions || [];
+                    this.allPenalties = data.penalties || [];
+                    // If you need a list of all members for filtering the main table,
+                    // you would process allContributions/allPenalties here
+                    // this.allComponentMembers = this.extractMembersFromAllData(); // Example
+
+                    this.filterData(); // Apply filters etc. after data is updated
+                } catch (error) {
+                    console.error("Error fetching initial data:", error);
+                    this.error = `Failed to load data: ${error.message}. Please try again later.`;
+                    // Set empty arrays on error to avoid issues with undefined data
+                    this.chamas = [];
+                    this.allContributions = [];
+                    this.allPenalties = [];
+                    // this.allComponentMembers = []; // Clear if used
+                } finally {
+                    this.isLoading = false;
+                    console.log("Initial fetching complete.");
+                }
+            },
+
+            // Method to fetch members specifically for a given chama
+            async fetchMembersForChama(chamaId) {
+                this.members = []; // Clear current members in the modal dropdown
+                this.newPayment.userId = ''; // Reset selected member ID for payment modal
+                this.newPayment.member = ''; // Reset selected member name for payment modal
+
+                // Also reset member selection in the penalty modal form if that modal is open
+                // or if you plan to reuse the 'members' list for the penalty modal
+                this.newPenalty.userId = ''; // Reset selected member ID for penalty modal
+                this.newPenalty.member = ''; // Reset selected member name for penalty modal
+
+
+                if (!chamaId || chamaId === 'all') { // Handle 'all' case or no selection
+                    console.log("No specific chama selected for members fetch.");
+                    return;
+                }
+
+                // Use isSubmitting for modal-specific loading feedback if desired,
+                // or add a separate `isFetchingMembers` state. Using isLoading might affect main UI.
+                // Let's use isLoading for simplicity here, assuming it's acceptable.
+                const previousLoadingState = this.isLoading; // Save global loading state
+                this.isLoading = true; // Indicate loading for this specific action
+                this.error = null; // Clear previous errors related to member fetching
+                console.log(`Workspaceing members for chama ID: ${chamaId}...`);
+
+                try {
+                    // *** IMPORTANT: MAKE SURE THIS BACKEND ENDPOINT EXISTS AND WORKS ***
+                    // It should return a JSON array of member objects like [{ id: 1, name: 'Member A' }, { id: 5, name: 'Member B' }]
+                    const response = await fetch(`/contributions/api/chamas/${chamaId}/members`);
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        // Check if the error is specifically 'not found' or indicates no members
+                        if (response.status === 404 || (errorData.description && errorData.description.includes('no members'))) {
+                            console.log(`No members found for chama ${chamaId}`);
+                            this.members = []; // Set empty array if no members found
+                        } else {
+                            throw new Error(errorData.description || `HTTP error! status: ${response.status}`);
+                        }
+                    } else {
+                        const data = await response.json();
+                        console.log("Members received:", data);
+                        // Assuming the backend returns an array of member objects [{ id: 1, name: 'Member A' }, ...]
+                        this.members = data || []; // Populate the 'members' state for the modal dropdown
+                    }
+
+                } catch (error) {
+                    console.error(`Error fetching members for chama ${chamaId}:`, error);
+                    this.error = `Failed to load members for this chama: ${error.message}`;
+                    this.members = []; // Clear members list on error
+                } finally {
+                    // Restore global loading state only if this fetch didn't overlap with the initial data fetch
+                    if (this.isLoading === true) { // Only set false if *this* function set it true
+                        this.isLoading = previousLoadingState; // Restore the state before this fetch
+                    }
+                    console.log("Fetching members complete.");
+                }
+            },
+
+            // Extract unique members from contributions and penalties
+            extractMembers() {
+                const memberSet = new Set();
+                this.allContributions.forEach(c => memberSet.add(JSON.stringify({
+                    id: c.user_id,
+                    name: c.member
+                })));
+                this.allPenalties.forEach(p => memberSet.add(JSON.stringify({
+                    id: p.user_id,
+                    name: p.member
+                })));
+                // Filter members by selected chama if needed, or keep all for now
+                // const chamaMembers = new Set();
+                // if (this.selectedChama !== 'all') {
+                //     this.allContributions.filter(c=>c.chamaId == this.selectedChama).forEach(c => chamaMembers.add(JSON.stringify({ id: c.user_id, name: c.member })));
+                //     this.allPenalties.filter(p=>p.chamaId == this.selectedChama).forEach(p => chamaMembers.add(JSON.stringify({ id: p.user_id, name: p.member })));
+                //     this.members = Array.from(chamaMembers).map(m => JSON.parse(m)).sort((a, b) => a.name.localeCompare(b.name));
+                // } else {
+                this.members = Array.from(memberSet).map(m => JSON.parse(m)).sort((a, b) => a.name.localeCompare(b.name));
+                // }
+
+            },
+
+            // ... (formatCurrency, formatDate, getChamaName, filterData, sortBy, sortAndPaginate, paginateData, resetPagination, prevPage, nextPage remain largely the same) ...
+            // Make sure filterData calls extractMembers if needed based on selected chama
+            filterData() {
+                this.currentPage = 1; // Reset page on filter change
+                // this.extractMembers(); // Update members if dropdown should be context-aware
+
+                // Filter Contributions
+                let tempContributions = this.allContributions;
+                // Filter by Chama
+                if (this.selectedChama !== 'all') {
+                    // Use == for potential type mismatch (e.g., number vs string ID)
+                    tempContributions = tempContributions.filter(c => c.chamaId == this.selectedChama);
+                }
+                // Filter by Search Term
+                if (this.searchTerm) {
+                    const lowerSearch = this.searchTerm.toLowerCase();
+                    tempContributions = tempContributions.filter(c => c.member.toLowerCase().includes(lowerSearch));
+                }
+
+                // Filter Penalties
+                let tempPenalties = this.allPenalties;
+                if (this.selectedChama !== 'all') {
+                    tempPenalties = tempPenalties.filter(p => p.chamaId == this.selectedChama);
+                }
+                if (this.searchTerm) {
+                    const lowerSearch = this.searchTerm.toLowerCase();
+                    tempPenalties = tempPenalties.filter(p => p.member.toLowerCase().includes(lowerSearch) || (p.reason && p.reason.toLowerCase().includes(lowerSearch)));
+                }
+
+                this.filteredContributions = tempContributions;
+                this.filteredPenalties = tempPenalties;
+
+                this.sortAndPaginate(); // Sort and paginate the filtered results
+            },
+            getChamaName(chamaId) {
+                // Find chama in the fetched chamas list
+                const chama = this.chamas.find(c => c.id == chamaId); // Use ==
+                return chama ? chama.name : 'N/A';
+            },
+            sortAndPaginate() {
+                const column = this.sortColumn;
+                const direction = this.sortDirection === 'asc' ? 1 : -1;
+
+                // Define the sorting comparison function
+                const sortFn = (a, b) => {
+                    let valA = a[column];
+                    let valB = b[column];
+
+                    // Handle different data types for comparison
+                    if (typeof valA === 'string') valA = valA.toLowerCase();
+                    if (typeof valB === 'string') valB = valB.toLowerCase();
+
+                    // Special handling for date comparison
+                    if (column === 'date') {
+                        // Ensure consistent date objects for comparison
+                        // Handle potential invalid date strings gracefully
+                        valA = valA ? new Date(valA) : null;
+                        valB = valB ? new Date(valB) : null;
+                        if (valA instanceof Date && isNaN(valA)) valA = null; // Invalid date becomes null
+                        if (valB instanceof Date && isNaN(valB)) valB = null;
+
+                        // Handle null dates (e.g., put them at the end)
+                        if (valA === null && valB === null) return 0;
+                        if (valA === null) return 1 * direction; // nulls last when ascending
+                        if (valB === null) return -1 * direction; // nulls last when ascending
+                    }
+                    // Handle numeric comparison if values look like numbers but might be strings
+                    else if (!isNaN(parseFloat(valA)) && !isNaN(parseFloat(valB))) {
+                        valA = parseFloat(valA);
+                        valB = parseFloat(valB);
+                    }
+
+
+                    // Perform comparison
+                    if (valA < valB) return -1 * direction;
+                    if (valA > valB) return 1 * direction;
+                    return 0; // Items are equal
+                };
+
+                // Sort the filtered arrays IN PLACE
+                this.filteredContributions.sort(sortFn);
+                this.filteredPenalties.sort(sortFn);
+
+                // Now paginate the newly sorted, filtered data
+                this.paginateData();
+            },
+
+            // --- Ensure paginateData is also present ---
+            paginateData() {
+                const contributionsStart = (this.currentPage - 1) * this.itemsPerPage;
+                const contributionsEnd = contributionsStart + this.itemsPerPage;
+                this.paginatedContributions = this.filteredContributions.slice(contributionsStart, contributionsEnd);
+
+                const penaltiesStart = (this.currentPage - 1) * this.itemsPerPage;
+                const penaltiesEnd = penaltiesStart + this.itemsPerPage;
+                this.paginatedPenalties = this.filteredPenalties.slice(penaltiesStart, penaltiesEnd);
+            },
+            // --- Modal Handling ---
+            openModal(modalName, item = null) {
+                this.error = null; // Clear previous errors when opening modal
+                // Clear members list when opening any modal that might show it, before potentially fetching
+                this.members = [];
+
+
+                if (modalName === 'editContribution' || modalName === 'editPenalty') {
+                    this.editingItem = item ? {...item
+                    } : null;
+                    // Ensure date is in YYYY-MM-DD format for input type="date"
+                    if (this.editingItem && this.editingItem.date) {
+                        try {
+                            this.editingItem.date = new Date(this.editingItem.date).toISOString().split('T')[0];
+                        } catch (e) {
+                            console.error("date error", e)
+                        }
+                    }
+                    if (this.editingItem && this.editingItem.resolved_date) {
+                        try {
+                            this.editingItem.resolved_date = new Date(this.editingItem.resolved_date).toISOString().split('T')[0];
+                        } catch (e) {
+                            console.error("date error", e)
+                        }
+                    }
+                    // *** If editing, you might need to fetch members for the editing item's chama too ***
+                    // if (this.editingItem && this.editingItem.chamaId) {
+                    //      this.fetchMembersForChama(this.editingItem.chamaId);
+                    // }
+
+
+                } else if (modalName === 'deleteConfirmation') {
+                    this.itemToDelete = item;
+
+                } else if (modalName === 'recordPayment') {
+                    this.resetNewPaymentForm(); // This clears newPayment and members list
+                    // Optionally set default chama if one is selected in the main view
+                    if (this.selectedChama !== 'all') {
+                        this.newPayment.chamaId = this.selectedChama;
+                        // *** Fetch members immediately if a chama is pre-selected when opening the modal ***
+                        this.fetchMembersForChama(this.newPayment.chamaId);
+                    }
+
+
+                } else if (modalName === 'addPenalty') {
+                    this.resetNewPenaltyForm(); // This clears newPenalty and members list
+                    // Optionally set default chama if one is selected in the main view
+                    if (this.selectedChama !== 'all') {
+                        this.newPenalty.chamaId = this.selectedChama;
+                        // *** Fetch members immediately if a chama is pre-selected when opening the modal ***
+                        this.fetchMembersForChama(this.newPenalty.chamaId); // Reuse the same fetch function and 'members' state
+                    }
+                }
+                this.modals[modalName] = true;
+            },
+
+            closeModal(modalName) {
+                this.modals[modalName] = false;
+                this.editingItem = null;
+                this.itemToDelete = null;
+                this.error = null; // Clear error on close
+                this.members = []; // Clear members list when modal is closed
+                // Also reset form data just in case
+                if (modalName === 'recordPayment') this.resetNewPaymentForm();
+                if (modalName === 'addPenalty') this.resetNewPenaltyForm();
+            },
+
+            resetNewPaymentForm() {
+                // Set default date to today
+                const today = new Date().toISOString().split('T')[0];
+                this.newPayment = {
+                    chamaId: '',
+                    userId: '', // Ensure userId is reset
+                    member: '', // Ensure member is reset
+                    amount: null,
+                    date: today,
+                    method: 'M-Pesa',
+                    status: 'Paid',
+                    reference_number: '',
+                    notes: ''
+                };
+                // Don't clear this.members here, it's done in open/close modal or fetchMembersForChama
+            },
+            resetNewPenaltyForm() {
+                const today = new Date().toISOString().split('T')[0];
+                this.newPenalty = {
+                    chamaId: '',
+                    userId: '', // Ensure userId is reset
+                    member: '', // Ensure member is reset
+                    amount: null,
+                    reason: '',
+                    date: today,
+                    status: 'Active',
+                    penalty_type: 'Other'
+                };
+                // Don't clear this.members here, it's done in open/close modal or fetchMembersForChama
+            },
+
+            // --- CRUD Operations (API Calls) ---
+            async addContribution() {
+                if (!this.newPayment.chamaId) { // Check chama first
+                    this.error = "Please select a chama.";
+                    return;
+                }
+                if (!this.newPayment.userId) { // Then check member
+                    this.error = "Please select a member.";
+                    return;
+                }
+
+                this.isSubmitting = true;
+                this.error = null; // Clear previous errors before submit
+                console.log("Submitting new contribution:", this.newPayment);
+
+                // You might want to get the selected member's name from the 'members' list
+                // based on the selected userId and add it to the payload, or let the backend handle it.
+                const selectedMember = this.members.find(m => m.id == this.newPayment.userId);
+                if (selectedMember) {
+                    this.newPayment.member = selectedMember.name;
+                } else {
+                    // Handle case where member name couldn't be found (shouldn't happen if dropdown is populated correctly)
+                    console.warn("Could not find selected member name for ID:", this.newPayment.userId);
+                    this.newPayment.member = ''; // Or handle error
+                }
+
+
+                try {
+                    const response = await fetch('/contributions/api/contributions', { // Ensure URL matches Flask route
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            // Add CSRF token header if needed:
+                            // 'X-CSRFToken': csrfToken // Get csrfToken from page
+                        },
+                        body: JSON.stringify(this.newPayment) // Send the newPayment object including userId and member name
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.description || `HTTP error! status: ${response.status}`);
+                    }
+
+                    const addedContribution = await response.json();
+                    console.log("Contribution added:", addedContribution);
+
+                    // Refetch all data to update the main tables and stats
+                    await this.fetchData();
+
+                    this.closeModal('recordPayment');
+                    // show success notification (implement this)
+
+                } catch (error) {
+                    console.error("Error adding contribution:", error);
+                    this.error = `Failed to add contribution: ${error.message}`;
+                } finally {
+                    this.isSubmitting = false;
+                }
+            },
+
+            async addPenalty() {
+                if (!this.newPenalty.chamaId) { // Check chama first
+                    this.error = "Please select a chama.";
+                    return;
+                }
+                if (!this.newPenalty.userId) { // Then check member
+                    this.error = "Please select a member.";
+                    return;
+                }
+
+                this.isSubmitting = true;
+                this.error = null; // Clear previous errors before submit
+                console.log("Submitting new penalty:", this.newPenalty);
+
+                // Get selected member name for penalty too
+                const selectedMember = this.members.find(m => m.id == this.newPenalty.userId);
+                if (selectedMember) {
+                    this.newPenalty.member = selectedMember.name;
+                } else {
+                    console.warn("Could not find selected member name for ID:", this.newPenalty.userId);
+                    this.newPenalty.member = ''; // Or handle error
+                }
+
+
+                try {
+                    const response = await fetch('/contributions/api/penalties', { // Ensure URL matches Flask route
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json' /* Add CSRF */
+                        },
+                        body: JSON.stringify(this.newPenalty) // Send the newPenalty object
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.description || `HTTP error! status: ${response.status}`);
+                    }
+                    const addedPenalty = await response.json();
+                    console.log("Penalty added:", addedPenalty);
+
+                    await this.fetchData(); // Refetch to update main tables
+                    this.closeModal('addPenalty');
+                    // show success notification
+
+                } catch (error) {
+                    console.error("Error adding penalty:", error);
+                    this.error = `Failed to add penalty: ${error.message}`;
+                } finally {
+                    this.isSubmitting = false;
+                }
+            },
+
+            async updateContribution() {
+                if (!this.editingItem || !this.editingItem.id) return;
+                // Add validation checks for editingItem here if needed (e.g., userId, chamaId)
+                this.isSubmitting = true;
+                this.error = null;
+                console.log("Updating contribution:", this.editingItem.id, this.editingItem);
+
+                try {
+                    const response = await fetch(`/contributions/api/contributions/${this.editingItem.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json' /* Add CSRF */
+                        },
+                        body: JSON.stringify(this.editingItem)
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.description || `HTTP error! status: ${response.status}`);
+                    }
+                    const updatedContribution = await response.json();
+                    console.log("Contribution updated:", updatedContribution);
+
+                    await this.fetchData(); // Refetch
+                    this.closeModal('editContribution');
+                    // show success notification
+
+                } catch (error) {
+                    console.error("Error updating contribution:", error);
+                    this.error = `Failed to update contribution: ${error.message}`;
+                } finally {
+                    this.isSubmitting = false;
+                }
+            },
+
+            async updatePenalty() {
+                if (!this.editingItem || !this.editingItem.id) return;
+                // Add validation checks for editingItem here if needed
+                this.isSubmitting = true;
+                this.error = null;
+                console.log("Updating penalty:", this.editingItem.id, this.editingItem);
+
+                try {
+                    const response = await fetch(`/contributions/api/penalties/${this.editingItem.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json' /* Add CSRF */
+                        },
+                        body: JSON.stringify(this.editingItem)
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.description || `HTTP error! status: ${response.status}`);
+                    }
+                    const updatedPenalty = await response.json();
+                    console.log("Penalty updated:", updatedPenalty);
+
+                    await this.fetchData(); // Refetch
+                    this.closeModal('editPenalty');
+                    // show success notification
+
+                } catch (error) {
+                    console.error("Error updating penalty:", error);
+                    this.error = `Failed to update penalty: ${error.message}`;
+                } finally {
+                    this.isSubmitting = false;
+                }
+            },
+
+            async deleteItem() {
+                if (!this.itemToDelete || !this.itemToDelete.item || !this.itemToDelete.item.id) return;
+                this.isSubmitting = true; // Use isSubmitting also for delete confirmation
+                this.error = null;
+                const {
+                    type,
+                    item
+                } = this.itemToDelete;
+                const url = type === 'contribution' ? `/contributions/api/contributions/${item.id}` : `/contributions/api/penalties/${item.id}`;
+                console.log("Deleting:", type, item.id);
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'DELETE',
+                        headers: { /* Add CSRF if needed */ }
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.description || `HTTP error! status: ${response.status}`);
+                    }
+                    console.log(`${type} deleted successfully.`);
+
+                    await this.fetchData(); // Refetch data after delete
+                    this.closeModal('deleteConfirmation');
+                    // show success notification
+
+
+                } catch (error) {
+                    console.error(`Error deleting ${type}:`, error);
+                    this.error = `Failed to delete ${type}: ${error.message}`;
+                    // Keep the modal open if delete fails, so user sees the error
+                } finally {
+                    this.isSubmitting = false;
+                    // If successful, the modal is already closed above.
+                    // If error, keep modal open with the error message.
+                }
+            },
+
+            // This original extractMembers method is NOT used for the modal dropdown anymore.
+            // It extracted all members from the existing fetched data.
+            // Keep it only if you need a list of *all* members for filtering/display on the main page.
+            extractMembers() {
+                console.warn("The 'extractMembers' method is likely deprecated for modal member selection. Use 'fetchMembersForChama' instead.");
+                // If still needed for main page filtering/display:
+                // const memberSet = new Set();
+                // this.allContributions.forEach(c => memberSet.add(JSON.stringify({
+                //     id: c.user_id,
+                //     name: c.member
+                // })));
+                // this.allPenalties.forEach(p => memberSet.add(JSON.stringify({
+                //     id: p.user_id,
+                //     name: p.member
+                // })));
+                // this.allComponentMembers = Array.from(memberSet).map(m => JSON.parse(m)).sort((a, b) => a.name.localeCompare(b.name));
+            },
+        }
+    }
+</script>
+{% endblock %}
